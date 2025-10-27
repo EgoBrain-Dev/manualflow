@@ -7,29 +7,23 @@ on:
     branches: [ main ]
 
 jobs:
-  build_and_deploy:
+  deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
+      # 1️⃣ Pega o código do repositório
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      # ✅ Cria arquivo JS com a chave do Firebase de forma segura
+      # 2️⃣ Cria o arquivo firebase-env.js com a chave segura
       - name: Set Firebase API Key
         run: |
           echo "window.FIREBASE_API_KEY='${{ secrets.FIREBASE_API_KEY }}';" > public/js/firebase-env.js
 
+      # 3️⃣ Instala Firebase CLI globalmente
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
+      # 4️⃣ Faz deploy para o Firebase Hosting
       - name: Deploy to Firebase
         run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
