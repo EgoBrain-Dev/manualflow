@@ -1,9 +1,11 @@
-// Funcionalidade da página de registro
+// Funcionalidade moderna da página de registro
 import { 
     auth,
     createUserWithEmailAndPassword,
     updateProfile,
-    sendEmailVerification
+    sendEmailVerification,
+    GoogleAuthProvider,
+    signInWithPopup
 } from './firebase-config.js';
 
 // Elementos DOM
@@ -15,11 +17,21 @@ const passwordInput = document.getElementById('password');
 const confirmPasswordInput = document.getElementById('confirmPassword');
 const acceptTerms = document.getElementById('acceptTerms');
 const acceptConfidentiality = document.getElementById('acceptConfidentiality');
+const googleSignInBtn = document.getElementById('googleSignIn');
 
-// Função para mostrar mensagens
+// Elementos do indicador de força
+const passwordStrengthBar = document.getElementById('passwordStrengthBar');
+const passwordStrengthText = document.getElementById('passwordStrengthText');
+const passwordRequirements = document.getElementById('passwordRequirements');
+const passwordMatch = document.getElementById('passwordMatch');
+
+// Provider do Google
+const googleProvider = new GoogleAuthProvider();
+
+// Função para mostrar mensagens fixas no topo
 function showMessage(text, type = 'error') {
     messageDiv.textContent = text;
-    messageDiv.className = `fade-in p-4 rounded-lg text-sm text-center ${
+    messageDiv.className = `message-fixed ${
         type === 'error' ? 'message-error' : 
         type === 'success' ? 'message-success' : 'message-info'
     }`;
@@ -48,15 +60,77 @@ function setLoading(isLoading) {
     }
 }
 
+// Função para verificar força da password
+function checkPasswordStrength(password) {
+    let strength = 0;
+    const requirements = {
+        length: password.length >= 6,
+        lowercase: /[a-z]/.test(password),
+        uppercase: /[A-Z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[^A-Za-z0-9]/.test(password)
+    };
+
+    // Atualizar indicadores visuais
+    Object.keys(requirements).forEach(req => {
+        const element = passwordRequirements.querySelector(`[data-requirement="${req}"]`);
+        if (element) {
+            const icon = element.querySelector('i');
+            const text = element.querySelector('span');
+            
+            if (requirements[req]) {
+                icon.className = 'fas fa-check text-green-500 mr-1 text-xs';
+                element.classList.add('requirement-valid');
+                element.classList.remove('requirement-invalid');
+                strength++;
+            } else {
+                icon.className = 'fas fa-times text-red-400 mr-1 text-xs';
+                element.classList.remove('requirement-valid');
+                element.classList.add('requirement-invalid');
+            }
+        }
+    });
+
+    // Determinar nível de força
+    let strengthLevel = 'weak';
+    let strengthClass = 'strength-weak';
+    
+    if (strength >= 4) {
+        strengthLevel = 'strong';
+        strengthClass = 'strength-strong';
+    } else if (strength >= 3) {
+        strengthLevel = 'good';
+        strengthClass = 'strength-good';
+    } else if (strength >= 2) {
+        strengthLevel = 'fair';
+        strengthClass = 'strength-fair';
+    }
+
+    // Atualizar barra e texto
+    passwordStrengthBar.className = `h-2 rounded-full transition-all duration-300 ${strengthClass}`;
+    
+    const strengthTexts = {
+        weak: 'Fraca',
+        fair: 'Razoável', 
+        good: 'Boa',
+        strong: 'Forte'
+    };
+    
+    passwordStrengthText.textContent = strengthTexts[strengthLevel];
+    passwordStrengthText.className = `text-xs font-medium ${
+        strengthLevel === 'weak' ? 'text-red-600' :
+        strengthLevel === 'fair' ? 'text-yellow-600' :
+        strengthLevel === 'good' ? 'text-green-600' :
+        'text-green-700'
+    }`;
+
+    return strength >= 3; // Mínimo de 3 requisitos para password aceitável
+}
+
 // Função de validação de email
 function validateEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
-}
-
-// Função de validação de password
-function validatePassword(password) {
-    return password.length >= 6;
 }
 
 // Função para validar o formulário
@@ -71,8 +145,13 @@ function validateForm(name, email, password, confirmPassword, termsAccepted, con
         return false;
     }
 
-    if (!validatePassword(password)) {
+    if (password.length < 6) {
         showMessage('A password deve ter pelo menos 6 caracteres.');
+        return false;
+    }
+
+    if (!checkPasswordStrength(password)) {
+        showMessage('A password é muito fraca. Use letras maiúsculas, minúsculas e números.');
         return false;
     }
 
@@ -125,7 +204,7 @@ registerForm.addEventListener('submit', async (e) => {
         // Enviar email de verificação
         await sendEmailVerification(user);
 
-        showMessage('Conta criada com sucesso! Verifique seu email para confirmar a conta.', 'success');
+        showMessage('🎉 Conta criada com sucesso! Verifique seu email para confirmar a conta.', 'success');
         
         // Redirecionar para login após sucesso
         setTimeout(() => {
@@ -153,6 +232,8 @@ registerForm.addEventListener('submit', async (e) => {
             case 'auth/network-request-failed':
                 errorMessage = 'Erro de conexão. Verifique sua internet.';
                 break;
+            default:
+                errorMessage = `Erro: ${error.message}`;
         }
         
         showMessage(errorMessage);
@@ -161,16 +242,75 @@ registerForm.addEventListener('submit', async (e) => {
     }
 });
 
+// Login com Google
+googleSignInBtn.addEventListener('click', async () => {
+    try {
+        googleSignInBtn.classList.add('social-loading');
+        googleSignInBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Conectando...';
+        
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        
+        showMessage(`🎉 Bem-vindo(a), ${user.displayName || 'Utilizador'}!`, 'success');
+        
+        // Redirecionar para dashboard
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Erro no login com Google:', error);
+        
+        let errorMessage = 'Erro ao conectar com Google. Tente novamente.';
+        
+        switch (error.code) {
+            case 'auth/popup-closed-by-user':
+                errorMessage = 'Login cancelado.';
+                break;
+            case 'auth/popup-blocked':
+                errorMessage = 'Popup bloqueado. Permita popups para este site.';
+                break;
+            case 'auth/network-request-failed':
+                errorMessage = 'Erro de conexão. Verifique sua internet.';
+                break;
+        }
+        
+        showMessage(errorMessage);
+        googleSignInBtn.classList.remove('social-loading');
+        googleSignInBtn.innerHTML = '<i class="fab fa-google text-red-500 mr-2"></i>Continuar com Google';
+    }
+});
+
 // Validação em tempo real da password
 passwordInput.addEventListener('input', () => {
     const password = passwordInput.value;
     
-    if (password.length > 0 && password.length < 6) {
-        passwordInput.classList.add('border-red-300');
-        passwordInput.classList.remove('border-gray-300');
+    if (password.length > 0) {
+        passwordRequirements.classList.remove('hidden');
+        checkPasswordStrength(password);
     } else {
-        passwordInput.classList.remove('border-red-300');
-        passwordInput.classList.add('border-gray-300');
+        passwordRequirements.classList.add('hidden');
+        passwordStrengthBar.className = 'h-2 rounded-full transition-all duration-300 strength-weak';
+        passwordStrengthText.textContent = 'Fraca';
+    }
+    
+    // Validar confirmação
+    const confirmPassword = confirmPasswordInput.value;
+    if (confirmPassword.length > 0) {
+        if (password === confirmPassword) {
+            passwordMatch.classList.remove('hidden');
+            passwordMatch.innerHTML = '<i class="fas fa-check text-green-500 mr-1"></i><span class="text-green-600">Passwords coincidem</span>';
+            confirmPasswordInput.classList.remove('border-red-300');
+            confirmPasswordInput.classList.add('border-green-300');
+        } else {
+            passwordMatch.classList.remove('hidden');
+            passwordMatch.innerHTML = '<i class="fas fa-times text-red-500 mr-1"></i><span class="text-red-600">Passwords não coincidem</span>';
+            confirmPasswordInput.classList.add('border-red-300');
+            confirmPasswordInput.classList.remove('border-green-300');
+        }
+    } else {
+        passwordMatch.classList.add('hidden');
+        confirmPasswordInput.classList.remove('border-red-300', 'border-green-300');
     }
 });
 
@@ -179,12 +319,21 @@ confirmPasswordInput.addEventListener('input', () => {
     const password = passwordInput.value;
     const confirmPassword = confirmPasswordInput.value;
     
-    if (confirmPassword.length > 0 && password !== confirmPassword) {
-        confirmPasswordInput.classList.add('border-red-300');
-        confirmPasswordInput.classList.remove('border-gray-300');
+    if (confirmPassword.length > 0) {
+        if (password === confirmPassword) {
+            passwordMatch.classList.remove('hidden');
+            passwordMatch.innerHTML = '<i class="fas fa-check text-green-500 mr-1"></i><span class="text-green-600">Passwords coincidem</span>';
+            confirmPasswordInput.classList.remove('border-red-300');
+            confirmPasswordInput.classList.add('border-green-300');
+        } else {
+            passwordMatch.classList.remove('hidden');
+            passwordMatch.innerHTML = '<i class="fas fa-times text-red-500 mr-1"></i><span class="text-red-600">Passwords não coincidem</span>';
+            confirmPasswordInput.classList.add('border-red-300');
+            confirmPasswordInput.classList.remove('border-green-300');
+        }
     } else {
-        confirmPasswordInput.classList.remove('border-red-300');
-        confirmPasswordInput.classList.add('border-gray-300');
+        passwordMatch.classList.add('hidden');
+        confirmPasswordInput.classList.remove('border-red-300', 'border-green-300');
     }
 });
 

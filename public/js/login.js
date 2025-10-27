@@ -1,11 +1,13 @@
-// Configuração e funcionalidade da página de login
+// Configuração e funcionalidade da página de login - VERSÃO CORRIGIDA
 import { 
     auth, 
     signInWithEmailAndPassword, 
     setPersistence, 
     browserLocalPersistence,
     browserSessionPersistence,
-    sendPasswordResetEmail 
+    sendPasswordResetEmail,
+    GoogleAuthProvider,
+    signInWithPopup
 } from './firebase-config.js';
 
 // Elementos DOM
@@ -15,6 +17,7 @@ const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const rememberCheckbox = document.getElementById('remember');
 const forgotPasswordBtn = document.getElementById('forgotPassword');
+const googleSignInBtn = document.getElementById('googleSignIn');
 
 // Elementos do Modal de Recuperação
 const recoveryModal = document.getElementById('recoveryModal');
@@ -24,41 +27,33 @@ const recoveryForm = document.getElementById('recoveryForm');
 const recoveryEmail = document.getElementById('recoveryEmail');
 const recoveryMessage = document.getElementById('recoveryMessage');
 
+// Provider do Google
+const googleProvider = new GoogleAuthProvider();
+
 // Função para mostrar mensagens
 function showMessage(text, type = 'error') {
     messageDiv.textContent = text;
-    messageDiv.className = `fade-in p-4 rounded-lg text-sm text-center ${
+    messageDiv.className = `message-fixed ${
         type === 'error' ? 'message-error' : 
         type === 'success' ? 'message-success' : 'message-info'
     }`;
     messageDiv.classList.remove('hidden');
     
-    // Auto-esconder mensagens de sucesso/info
     if (type === 'success' || type === 'info') {
         setTimeout(() => {
             messageDiv.classList.add('hidden');
-        }, 5000);
+        }, 3000);
     }
 }
 
-// Função para mostrar mensagem no modal
-function showRecoveryMessage(text, type = 'error') {
-    recoveryMessage.textContent = text;
-    recoveryMessage.className = `fade-in p-3 rounded-lg text-sm ${
-        type === 'error' ? 'message-error' : 
-        type === 'success' ? 'message-success' : 'message-info'
-    }`;
-    recoveryMessage.classList.remove('hidden');
-}
-
-// Função para mostrar loading no login
+// Função para mostrar loading
 function setLoading(isLoading) {
     const submitBtn = loginForm.querySelector('button[type="submit"]');
     
     if (isLoading) {
         submitBtn.classList.add('loading');
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Entrando...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Entrando...';
     } else {
         submitBtn.classList.remove('loading');
         submitBtn.disabled = false;
@@ -66,14 +61,14 @@ function setLoading(isLoading) {
     }
 }
 
-// Função para mostrar loading no modal de recuperação
+// Função para mostrar loading no modal
 function setRecoveryLoading(isLoading) {
     const submitBtn = recoveryForm.querySelector('button[type="submit"]');
     
     if (isLoading) {
         submitBtn.classList.add('loading');
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Enviando...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enviando...';
     } else {
         submitBtn.classList.remove('loading');
         submitBtn.disabled = false;
@@ -81,32 +76,29 @@ function setRecoveryLoading(isLoading) {
     }
 }
 
-// Função para abrir modal de recuperação
+// Funções do Modal
 function openRecoveryModal() {
-    // Preencher com email do login se existir
     if (emailInput.value) {
         recoveryEmail.value = emailInput.value;
     }
-    
     recoveryModal.classList.remove('hidden');
     recoveryMessage.classList.add('hidden');
     recoveryEmail.focus();
 }
 
-// Função para fechar modal de recuperação
 function closeRecoveryModalFunc() {
     recoveryModal.classList.add('hidden');
     recoveryForm.reset();
     recoveryMessage.classList.add('hidden');
 }
 
-// Função de validação de email
+// Validação de email
 function validateEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
 }
 
-// Event Listener para o formulário de login
+// LOGIN COM EMAIL/PASSWORD
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -114,7 +106,6 @@ loginForm.addEventListener('submit', async (e) => {
     const password = passwordInput.value;
     const rememberMe = rememberCheckbox.checked;
 
-    // Validação básica
     if (!email || !password) {
         showMessage('Por favor, preencha todos os campos.');
         return;
@@ -128,27 +119,22 @@ loginForm.addEventListener('submit', async (e) => {
     setLoading(true);
 
     try {
-        // Configurar persistência de autenticação
-        const persistence = rememberMe ? 
-            browserLocalPersistence :  // Mantém logado entre sessões
-            browserSessionPersistence; // Apenas para esta sessão
-        
+        // Configurar persistência
+        const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
         await setPersistence(auth, persistence);
 
-        // Tentar login
+        // Fazer login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        showMessage('Login bem-sucedido! Redirecionando...', 'success');
+        showMessage('✅ Login bem-sucedido! Redirecionando...', 'success');
         
-        // Redirecionar após login bem-sucedido
+        // REDIRECIONAMENTO IMEDIATO - SEM DELAY
         setTimeout(() => {
             window.location.href = 'index.html';
-        }, 1500);
+        }, 500);
 
     } catch (error) {
-        console.error('Erro no login:', error);
-        
         let errorMessage = 'Erro ao fazer login. Tente novamente.';
         
         switch (error.code) {
@@ -170,15 +156,53 @@ loginForm.addEventListener('submit', async (e) => {
             case 'auth/network-request-failed':
                 errorMessage = 'Erro de conexão. Verifique sua internet.';
                 break;
+            default:
+                errorMessage = `Erro: ${error.message}`;
         }
         
         showMessage(errorMessage);
-    } finally {
         setLoading(false);
     }
 });
 
-// Event Listener para o formulário de recuperação
+// LOGIN COM GOOGLE
+googleSignInBtn.addEventListener('click', async () => {
+    try {
+        googleSignInBtn.classList.add('loading');
+        googleSignInBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Conectando...';
+        
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        
+        showMessage(`✅ Bem-vindo(a), ${user.displayName || 'Utilizador'}!`, 'success');
+        
+        // REDIRECIONAMENTO IMEDIATO
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 500);
+        
+    } catch (error) {
+        let errorMessage = 'Erro ao conectar com Google. Tente novamente.';
+        
+        switch (error.code) {
+            case 'auth/popup-closed-by-user':
+                errorMessage = 'Login cancelado.';
+                break;
+            case 'auth/popup-blocked':
+                errorMessage = 'Popup bloqueado. Permita popups para este site.';
+                break;
+            case 'auth/network-request-failed':
+                errorMessage = 'Erro de conexão. Verifique sua internet.';
+                break;
+        }
+        
+        showMessage(errorMessage);
+        googleSignInBtn.classList.remove('loading');
+        googleSignInBtn.innerHTML = '<i class="fab fa-google mr-2"></i>Continuar com Google';
+    }
+});
+
+// RECUPERAÇÃO DE PASSWORD
 recoveryForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -198,16 +222,13 @@ recoveryForm.addEventListener('submit', async (e) => {
 
     try {
         await sendPasswordResetEmail(auth, email);
-        showRecoveryMessage('Email de recuperação enviado! Verifique sua caixa de entrada.', 'success');
+        showRecoveryMessage('📧 Email de recuperação enviado! Verifique sua caixa de entrada.', 'success');
         
-        // Fechar modal após sucesso
         setTimeout(() => {
             closeRecoveryModalFunc();
         }, 3000);
 
     } catch (error) {
-        console.error('Erro ao enviar email de recuperação:', error);
-        
         let errorMessage = 'Erro ao enviar email de recuperação. Tente novamente.';
         
         switch (error.code) {
@@ -231,38 +252,38 @@ recoveryForm.addEventListener('submit', async (e) => {
     }
 });
 
-// Event Listeners para o modal
+// Função para mostrar mensagem no modal
+function showRecoveryMessage(text, type = 'error') {
+    recoveryMessage.textContent = text;
+    recoveryMessage.className = `p-3 rounded-lg text-sm ${
+        type === 'error' ? 'message-error' : 
+        type === 'success' ? 'message-success' : 'message-info'
+    }`;
+    recoveryMessage.classList.remove('hidden');
+}
+
+// EVENT LISTENERS
 forgotPasswordBtn.addEventListener('click', openRecoveryModal);
 closeRecoveryModal.addEventListener('click', closeRecoveryModalFunc);
 cancelRecovery.addEventListener('click', closeRecoveryModalFunc);
 
-// Fechar modal ao clicar fora
 recoveryModal.addEventListener('click', (e) => {
     if (e.target === recoveryModal) {
         closeRecoveryModalFunc();
     }
 });
 
-// Fechar modal com ESC
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !recoveryModal.classList.contains('hidden')) {
         closeRecoveryModalFunc();
     }
 });
 
-// Verificar se já está autenticado (redirecionar se sim)
-auth.onAuthStateChanged((user) => {
-    if (user && window.location.pathname.includes('login.html')) {
-        // Já está logado, redirecionar para dashboard
-        window.location.href = 'index.html';
-    }
-});
-
-// Focar no campo de email ao carregar a página
+// INICIALIZAÇÃO
 document.addEventListener('DOMContentLoaded', () => {
     emailInput.focus();
     
-    // Verificar se há parâmetros de URL para mensagens
+    // Verificar parâmetros de URL
     const urlParams = new URLSearchParams(window.location.search);
     const message = urlParams.get('message');
     const messageType = urlParams.get('type');
