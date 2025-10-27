@@ -1,4 +1,4 @@
-// Firebase configuration - DADOS REAIS
+// Firebase configuration - seguro com variável de ambiente
 console.log('🔥 Firebase config carregado');
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -25,13 +25,11 @@ import {
     limit,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { 
-    getStorage 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// Configuração do Firebase para o seu projeto
+// Configuração do Firebase para o seu projeto usando variável de ambiente
 const firebaseConfig = {
-    apiKey: "AIzaSyBMtxQTQ_y1sZf1RpRbUT-Y8mSQaLRgrKU",
+    apiKey: window.FIREBASE_API_KEY,
     authDomain: "manualflow-b39af.firebaseapp.com",
     projectId: "manualflow-b39af",
     storageBucket: "manualflow-b39af.firebasestorage.app",
