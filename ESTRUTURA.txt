@@ -1,0 +1,45 @@
+manualflow-pwa/
+│
+├── public/                          # ✅ Pasta OBRIGATÓRIA para Firebase Hosting
+│   │
+│   ├── index.html                   # Dashboard principal
+│   ├── login.html                   # Página de login
+│   ├── register.html                # Página de registo
+│   ├── profile.html                 # Perfil do utilizador
+│   ├── manual-detail.html           # Detalhes do manual
+│   ├── upload.html                  # Upload de documentos
+│   ├── admin.html                   # Painel administrativo
+│   ├── sobre.html                   # Página "Sobre nós"
+│   ├── contactos.html               # Página "Contacte-nos"
+│   │
+│   ├── css/                         # ✅ Todos os assets dentro de public/
+│   │   ├── login.css
+│   │   ├── register.css
+│   │   └── [todos os outros CSS]
+│   │
+│   ├── js/                          # ✅ JS dentro de public/
+│   │   ├── firebase-config.js
+│   │   ├── auth.js
+│   │   └── [todos os outros JS]
+│   │
+│   ├── legal/                       # ✅ Documentação legal
+│   │   ├── termos-uso.html
+│   │   ├── privacidade.html
+│   │   └── licenca.html
+│   │
+│   └── assets/                      # ✅ Assets dentro de public/
+│       ├── icons/
+│       └── images/
+│
+├── functions/                       # ✅ Firebase Functions (se necessário)
+│   ├── index.js
+│   ├── package.json
+│   └── .eslintrc.js
+│
+├── .github/workflows/deploy.yml    # CI/CD
+├── firebase.json                   # Configuração Firebase
+├── .firebaserc                     # Firebase project config
+├── firestore.rules                 # Regras de segurança
+├── storage.rules                   # Regras do Storage
+├── database.rules.json             # Regras Realtime Database
+└── README.md
