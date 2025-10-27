@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - ManualFlow</title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
+
 <body class="bg-gray-50 min-h-screen">
+
     <!-- Header/Navigation -->
     <header class="bg-white shadow-sm border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,13 +32,11 @@
 
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4">
-                    <!-- Notifications -->
                     <button class="relative p-2 text-gray-600 hover:text-gray-900">
                         <i class="fas fa-bell text-lg"></i>
                         <span class="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full"></span>
                     </button>
 
-                    <!-- User Profile -->
                     <div class="relative" id="userMenu">
                         <button class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
                             <div class="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
@@ -46,22 +47,26 @@
                         </button>
 
                         <!-- Dropdown Menu -->
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-50" id="dropdownMenu">
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-50 dropdown-enter"
+                            id="dropdownMenu">
                             <div class="p-4 border-b">
                                 <p class="text-sm font-medium text-gray-900" id="dropdownUserName">Utilizador</p>
                                 <p class="text-xs text-gray-500" id="dropdownUserEmail">user@email.com</p>
                             </div>
                             <div class="p-2">
-                                <a href="profile.html" class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+                                <a href="profile.html"
+                                    class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                                     <i class="fas fa-user mr-3 text-gray-400"></i>
                                     Meu Perfil
                                 </a>
-                                <a href="#" class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+                                <a href="#"
+                                    class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                                     <i class="fas fa-cog mr-3 text-gray-400"></i>
                                     Configurações
                                 </a>
                                 <div class="border-t my-1"></div>
-                                <button id="logoutBtn" class="w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded">
+                                <button id="logoutBtn"
+                                    class="w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded">
                                     <i class="fas fa-sign-out-alt mr-3"></i>
                                     Terminar Sessão
                                 </button>
@@ -74,6 +79,7 @@
     </header>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         <!-- Page Header -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -81,9 +87,9 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 stats-grid mb-8">
             <!-- Total Manuais -->
-            <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
                 <div class="flex items-center">
                     <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
                         <i class="fas fa-book text-blue-600 text-xl"></i>
@@ -96,7 +102,7 @@
             </div>
 
             <!-- Em Revisão -->
-            <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
                 <div class="flex items-center">
                     <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
                         <i class="fas fa-clock text-yellow-600 text-xl"></i>
@@ -109,7 +115,7 @@
             </div>
 
             <!-- Aprovados -->
-            <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
                 <div class="flex items-center">
                     <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
                         <i class="fas fa-check-circle text-green-600 text-xl"></i>
@@ -122,7 +128,7 @@
             </div>
 
             <!-- Rejeitados -->
-            <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
                 <div class="flex items-center">
                     <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
                         <i class="fas fa-times-circle text-red-600 text-xl"></i>
@@ -136,17 +142,20 @@
         </div>
 
         <!-- Main Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column - Actions & Recent -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 main-grid">
+            <!-- Left Column -->
             <div class="lg:col-span-2 space-y-6">
+
                 <!-- Quick Actions -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
+                <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-semibold text-gray-900">Acções Rápidas</h2>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <a href="upload.html" class="flex items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group">
-                            <div class="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 quick-actions-grid">
+                        <a href="upload.html"
+                            class="flex items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group">
+                            <div
+                                class="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200">
                                 <i class="fas fa-upload text-blue-600"></i>
                             </div>
                             <div>
@@ -155,8 +164,10 @@
                             </div>
                         </a>
 
-                        <a href="#" class="flex items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group">
-                            <div class="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-green-200">
+                        <a href="#"
+                            class="flex items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group">
+                            <div
+                                class="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-green-200">
                                 <i class="fas fa-eye text-green-600"></i>
                             </div>
                             <div>
@@ -168,37 +179,36 @@
                 </div>
 
                 <!-- Recent Manuais -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
+                <div
+                    class="dashboard-card bg-white rounded-lg shadow-sm border p-6 custom-scrollbar overflow-y-auto max-h-96">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-semibold text-gray-900">Manuais Recentes</h2>
                         <a href="#" class="text-sm text-blue-600 hover:text-blue-500 font-medium">Ver todos</a>
                     </div>
-                    
+
                     <div class="space-y-4" id="recentManuals">
-                        <!-- Loading State -->
                         <div class="text-center py-8" id="loadingManuals">
                             <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-2"></i>
                             <p class="text-gray-500">A carregar manuais...</p>
                         </div>
 
-                        <!-- Empty State -->
                         <div class="text-center py-8 hidden" id="emptyManuals">
                             <i class="fas fa-folder-open text-gray-400 text-2xl mb-2"></i>
                             <p class="text-gray-500">Nenhum manual encontrado</p>
-                            <a href="upload.html" class="text-blue-600 hover:text-blue-500 text-sm font-medium mt-2 inline-block">
+                            <a href="upload.html"
+                                class="text-blue-600 hover:text-blue-500 text-sm font-medium mt-2 inline-block">
                                 Carregar primeiro manual
                             </a>
                         </div>
-
-                        <!-- Manual Items will be inserted here by JavaScript -->
                     </div>
                 </div>
+
             </div>
 
-            <!-- Right Column - Activity & Status -->
+            <!-- Right Column -->
             <div class="space-y-6">
                 <!-- Status Overview -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
+                <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Visão Geral do Estado</h2>
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
@@ -225,48 +235,103 @@
                 </div>
 
                 <!-- Activity Feed -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
+                <div
+                    class="dashboard-card bg-white rounded-lg shadow-sm border p-6 custom-scrollbar overflow-y-auto max-h-96">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Actividade Recente</h2>
                     <div class="space-y-3" id="activityFeed">
-                        <!-- Loading State -->
                         <div class="text-center py-4" id="loadingActivity">
                             <i class="fas fa-spinner fa-spin text-gray-400 text-sm mb-1"></i>
                             <p class="text-gray-500 text-xs">A carregar actividade...</p>
                         </div>
 
-                        <!-- Empty State -->
                         <div class="text-center py-4 hidden" id="emptyActivity">
                             <i class="fas fa-history text-gray-400 text-sm mb-1"></i>
                             <p class="text-gray-500 text-xs">Nenhuma actividade recente</p>
                         </div>
-
-                        <!-- Activity Items will be inserted here by JavaScript -->
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 stats-grid mb-8">
+
+        <!-- Total Manuais -->
+        <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6 status-published">
+            <div class="flex items-center">
+                <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-book text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total de Manuais</p>
+                    <p class="text-2xl font-bold text-gray-900" id="totalManuals">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Em Revisão -->
+        <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6 status-review">
+            <div class="flex items-center">
+                <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Em Revisão</p>
+                    <p class="text-2xl font-bold text-gray-900" id="inReview">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aprovados -->
+        <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6 status-approved">
+            <div class="flex items-center">
+                <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Aprovados</p>
+                    <p class="text-2xl font-bold text-gray-900" id="approved">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rejeitados -->
+        <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6 status-rejected">
+            <div class="flex items-center">
+                <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Rejeitados</p>
+                    <p class="text-2xl font-bold text-gray-900" id="rejected">0</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
     <!-- Footer -->
     <footer class="bg-white border-t mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="text-center text-sm text-gray-500">
-                <p>&copy; 2024 ManualFlow. Todos os direitos reservados.</p>
-                <p class="mt-1">
-                    <a href="sobre.html" class="hover:text-blue-600">Sobre</a> • 
-                    <a href="contactos.html" class="hover:text-blue-600">Contactos</a> • 
-                    <a href="legal/termos-uso.html" class="hover:text-blue-600">Termos</a>
-                </p>
-                <p class="mt-2 text-xs">
-                    Desenvolvido por <strong>EgoBrain-Dev</strong> | 
-                    WhatsApp: 84 361 7130 | 
-                    Email: egobrain.mz@gmail.com
-                </p>
-            </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-gray-500">
+            <p>&copy; 2024 ManualFlow. Todos os direitos reservados.</p>
+            <p class="mt-1">
+                <a href="sobre.html" class="hover:text-blue-600">Sobre</a> •
+                <a href="contactos.html" class="hover:text-blue-600">Contactos</a> •
+                <a href="legal/termos-uso.html" class="hover:text-blue-600">Termos</a>
+            </p>
+            <p class="mt-2 text-xs">
+                Desenvolvido por <strong>EgoBrain-Dev</strong> |
+                WhatsApp: 84 361 7130 |
+                Email: egobrain.mz@gmail.com
+            </p>
         </div>
     </footer>
 
     <!-- Scripts -->
     <script type="module" src="js/dashboard.js"></script>
 </body>
+
 </html>
