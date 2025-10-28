@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Manuais - ManualFlow</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="css/manual-list.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- Header/Navigation -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <div class="h-8 w-8 bg-blue-600 rounded flex items-center justify-center mr-3">
+                        <i class="fas fa-book-open text-white text-sm"></i>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">ManualFlow</span>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex space-x-8">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900 font-medium">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <a href="manual-list.html" class="text-blue-600 border-b-2 border-blue-600 font-medium">
+                        <i class="fas fa-list mr-2"></i>Meus Manuais
+                    </a>
+                    <a href="upload.html" class="text-gray-600 hover:text-gray-900 font-medium">
+                        <i class="fas fa-upload mr-2"></i>Upload
+                    </a>
+                </nav>
+
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <div class="relative" id="userMenu">
+                        <button class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
+                            <div class="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-semibold" id="userInitial">U</span>
+                            </div>
+                            <span class="text-gray-700 font-medium" id="userName">Utilizador</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mensagem Fixa no Topo -->
+    <div id="message" class="message-fixed hidden"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Meus Manuais</h1>
+                <p class="text-gray-600 mt-2">Gerir e visualizar todos os seus manuais</p>
+            </div>
+            <a href="upload.html" class="btn-primary px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center transition-colors">
+                <i class="fas fa-plus mr-2"></i>
+                Novo Manual
+            </a>
+        </div>
+
+        <!-- Filtros e Busca -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Busca -->
+                <div class="md:col-span-2">
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                    <div class="relative">
+                        <input type="text" id="search" 
+                               class="input-modern w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Buscar por título, tags...">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Filtro por Status -->
+                <div>
+                    <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <select id="statusFilter" class="input-modern w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">Todos os Estados</option>
+                        <option value="draft">Rascunho</option>
+                        <option value="review">Em Revisão</option>
+                        <option value="approved">Aprovados</option>
+                        <option value="rejected">Rejeitados</option>
+                        <option value="published">Publicados</option>
+                    </select>
+                </div>
+
+                <!-- Filtro por Categoria -->
+                <div>
+                    <label for="categoryFilter" class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                    <select id="categoryFilter" class="input-modern w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">Todas as Categorias</option>
+                        <option value="operacional">Operacional</option>
+                        <option value="tecnologia">Tecnologia</option>
+                        <option value="rh">Recursos Humanos</option>
+                        <option value="qualidade">Qualidade</option>
+                        <option value="seguranca">Segurança</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filtros Ativos -->
+            <div id="activeFilters" class="flex flex-wrap gap-2 mt-4 hidden">
+                <!-- Filtros ativos serão adicionados aqui dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Estatísticas Rápidas -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow-sm border p-4 text-center">
+                <div class="text-2xl font-bold text-gray-900" id="totalCount">0</div>
+                <div class="text-sm text-gray-600">Total</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border p-4 text-center">
+                <div class="text-2xl font-bold text-yellow-600" id="draftCount">0</div>
+                <div class="text-sm text-gray-600">Rascunhos</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border p-4 text-center">
+                <div class="text-2xl font-bold text-blue-600" id="reviewCount">0</div>
+                <div class="text-sm text-gray-600">Em Revisão</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border p-4 text-center">
+                <div class="text-2xl font-bold text-green-600" id="approvedCount">0</div>
+                <div class="text-sm text-gray-600">Aprovados</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border p-4 text-center">
+                <div class="text-2xl font-bold text-red-600" id="rejectedCount">0</div>
+                <div class="text-sm text-gray-600">Rejeitados</div>
+            </div>
+        </div>
+
+        <!-- Lista de Manuais -->
+        <div class="bg-white rounded-lg shadow-sm border">
+            <!-- Cabeçalho da Tabela -->
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">Manuais</h3>
+                    <div class="flex items-center space-x-4">
+                        <!-- Ordenação -->
+                        <select id="sortBy" class="input-modern text-sm px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="updatedAt-desc">Mais Recentes</option>
+                            <option value="updatedAt-asc">Mais Antigos</option>
+                            <option value="title-asc">Título A-Z</option>
+                            <option value="title-desc">Título Z-A</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingManuals" class="p-8 text-center">
+                <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-2"></i>
+                <p class="text-gray-500">A carregar manuais...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyManuals" class="p-8 text-center hidden">
+                <i class="fas fa-folder-open text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum manual encontrado</h3>
+                <p class="text-gray-500 mb-4">Comece por carregar o seu primeiro manual.</p>
+                <a href="upload.html" class="btn-primary inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                    <i class="fas fa-plus mr-2"></i>
+                    Carregar Primeiro Manual
+                </a>
+            </div>
+
+            <!-- Lista de Manuais -->
+            <div id="manualsList" class="hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Título
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Versão
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Estado
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Categoria
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Atualizado em
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Ações
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="manualsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Manuais serão inseridos aqui dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginação -->
+                <div id="pagination" class="px-6 py-4 border-t border-gray-200 flex items-center justify-between hidden">
+                    <div class="text-sm text-gray-700">
+                        A mostrar <span id="showingFrom">0</span> a <span id="showingTo">0</span> de <span id="totalItems">0</span> resultados
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prevPage" class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Anterior
+                        </button>
+                        <button id="nextPage" class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Próxima
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-gray-500">
+            <p>&copy; 2024 ManualFlow. Todos os direitos reservados.</p>
+            <p class="mt-1">
+                <a href="sobre.html" class="hover:text-blue-600">Sobre</a> •
+                <a href="contactos.html" class="hover:text-blue-600">Contactos</a> •
+                <a href="legal/termos-uso.html" class="hover:text-blue-600">Termos</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900" id="confirmTitle">Confirmar Ação</h3>
+            </div>
+            
+            <p class="text-gray-600 mb-6" id="confirmMessage">Tem a certeza que deseja prosseguir com esta ação?</p>
+            
+            <div class="flex justify-end space-x-3">
+                <button id="confirmCancel" class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium">
+                    Cancelar
+                </button>
+                <button id="confirmAction" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/firebase-env.js"></script>
+    <script type="module" src="js/manual-list.js"></script>
+</body>
+</html>
