@@ -1,4 +1,4 @@
-// Dashboard functionality
+// Dashboard functionality - VERSÃO COM DADOS REAIS
 import { 
     auth, 
     signOut,
@@ -96,7 +96,7 @@ function setupEventListeners() {
             window.location.href = 'login.html';
         } catch (error) {
             console.error('Erro ao terminar sessão:', error);
-            alert('Erro ao terminar sessão. Tente novamente.');
+            showError('Erro ao terminar sessão. Tente novamente.');
         }
     });
 
@@ -120,99 +120,160 @@ async function loadDashboardData() {
     }
 }
 
-// Load statistics
+// Load statistics from Firestore
 async function loadStats() {
     try {
-        // In a real app, you would query Firestore for these stats
-        // For now, we'll use mock data
-        const stats = {
-            total: 12,
-            inReview: 3,
-            approved: 7,
-            rejected: 2,
-            draft: 2,
-            published: 5
+        if (!currentUser) return;
+
+        // Query para buscar manuais do usuário atual
+        const manualsQuery = query(
+            collection(db, 'manuals'),
+            where('author', '==', currentUser.uid)
+        );
+
+        const querySnapshot = await getDocs(manualsQuery);
+        
+        // Calcular estatísticas
+        let stats = {
+            total: 0,
+            draft: 0,
+            review: 0,
+            approved: 0,
+            rejected: 0,
+            published: 0
         };
 
-        // Update DOM with stats
+        querySnapshot.forEach((doc) => {
+            const manual = doc.data();
+            stats.total++;
+            
+            switch (manual.status) {
+                case 'draft':
+                    stats.draft++;
+                    break;
+                case 'review':
+                    stats.review++;
+                    break;
+                case 'approved':
+                    stats.approved++;
+                    break;
+                case 'rejected':
+                    stats.rejected++;
+                    break;
+                case 'published':
+                    stats.published++;
+                    break;
+            }
+        });
+
+        // Update DOM with real stats
         totalManuals.textContent = stats.total;
-        inReview.textContent = stats.inReview;
+        inReview.textContent = stats.review;
         approved.textContent = stats.approved;
         rejected.textContent = stats.rejected;
         
         statusDraft.textContent = stats.draft;
-        statusReview.textContent = stats.inReview;
+        statusReview.textContent = stats.review;
         statusApproved.textContent = stats.approved;
         statusRejected.textContent = stats.rejected;
         statusPublished.textContent = stats.published;
 
     } catch (error) {
         console.error('Erro ao carregar estatísticas:', error);
+        // Fallback para dados mock se Firestore falhar
+        loadMockStats();
     }
 }
 
-// Load recent manuals
+// Fallback para dados mock
+function loadMockStats() {
+    const stats = {
+        total: 0,
+        inReview: 0,
+        approved: 0,
+        rejected: 0,
+        draft: 0,
+        published: 0
+    };
+
+    totalManuals.textContent = stats.total;
+    inReview.textContent = stats.inReview;
+    approved.textContent = stats.approved;
+    rejected.textContent = stats.rejected;
+    
+    statusDraft.textContent = stats.draft;
+    statusReview.textContent = stats.inReview;
+    statusApproved.textContent = stats.approved;
+    statusRejected.textContent = stats.rejected;
+    statusPublished.textContent = stats.published;
+}
+
+// Load recent manuals from Firestore
 async function loadRecentManuals() {
     try {
-        // Hide loading after a delay (simulate API call)
-        setTimeout(() => {
+        if (!currentUser) {
             loadingManuals.classList.add('hidden');
-            
-            // Mock data - replace with actual Firestore query
-            const manuals = [
-                {
-                    id: 1,
-                    title: 'Manual de Procedimentos Operacionais',
-                    status: 'review',
-                    author: 'João Silva',
-                    updatedAt: '2024-01-15',
-                    version: 'v2.1'
-                },
-                {
-                    id: 2,
-                    title: 'Guia de Utilização do Sistema',
-                    status: 'approved',
-                    author: 'Maria Santos',
-                    updatedAt: '2024-01-14',
-                    version: 'v1.3'
-                },
-                {
-                    id: 3,
-                    title: 'Protocolo de Segurança',
-                    status: 'draft',
-                    author: 'Pedro Costa',
-                    updatedAt: '2024-01-13',
-                    version: 'v0.8'
-                }
-            ];
+            emptyManuals.classList.remove('hidden');
+            return;
+        }
 
-            if (manuals.length === 0) {
-                emptyManuals.classList.remove('hidden');
-                return;
-            }
+        // Query para buscar manuais recentes do usuário
+        const manualsQuery = query(
+            collection(db, 'manuals'),
+            where('author', '==', currentUser.uid),
+            orderBy('updatedAt', 'desc'),
+            limit(5)
+        );
 
-            renderRecentManuals(manuals);
+        const querySnapshot = await getDocs(manualsQuery);
+        
+        loadingManuals.classList.add('hidden');
 
-        }, 1000);
+        if (querySnapshot.empty) {
+            emptyManuals.classList.remove('hidden');
+            return;
+        }
+
+        const manuals = [];
+        querySnapshot.forEach((doc) => {
+            const manualData = doc.data();
+            manuals.push({
+                id: doc.id,
+                ...manualData
+            });
+        });
+
+        renderRecentManuals(manuals);
 
     } catch (error) {
         console.error('Erro ao carregar manuais recentes:', error);
         loadingManuals.classList.add('hidden');
         emptyManuals.classList.remove('hidden');
+        // Fallback para dados mock
+        loadMockManuals();
     }
+}
+
+// Fallback para manuais mock
+function loadMockManuals() {
+    setTimeout(() => {
+        loadingManuals.classList.add('hidden');
+        emptyManuals.classList.remove('hidden');
+    }, 1000);
 }
 
 // Render recent manuals
 function renderRecentManuals(manuals) {
+    recentManuals.innerHTML = ''; // Limpar conteúdo anterior
+
     const manualItems = manuals.map(manual => `
         <div class="manual-item p-4 rounded-lg slide-in">
             <div class="flex justify-between items-start">
                 <div class="flex-1">
-                    <h3 class="font-medium text-gray-900 text-sm mb-1">${manual.title}</h3>
+                    <h3 class="font-medium text-gray-900 text-sm mb-1">${manual.title || 'Sem título'}</h3>
                     <div class="flex items-center space-x-4 text-xs text-gray-500">
-                        <span>${manual.author}</span>
-                        <span>${manual.updatedAt}</span>
-                        <span>${manual.version}</span>
+                        <span>${formatDate(manual.updatedAt)}</span>
+                        <span>${manual.version || 'v1.0'}</span>
                     </div>
                 </div>
                 <span class="status-badge status-${manual.status} ml-4">
@@ -225,71 +286,72 @@ function renderRecentManuals(manuals) {
     recentManuals.insertAdjacentHTML('beforeend', manualItems);
 }
 
-// Load activity feed
+// Load activity feed from Firestore
 async function loadActivityFeed() {
     try {
-        // Hide loading after a delay
-        setTimeout(() => {
+        if (!currentUser) {
             loadingActivity.classList.add('hidden');
-            
-            // Mock data - replace with actual Firestore query
-            const activities = [
-                {
-                    id: 1,
-                    action: 'upload',
-                    user: 'João Silva',
-                    target: 'Manual de Procedimentos',
-                    timestamp: 'há 2 horas'
-                },
-                {
-                    id: 2,
-                    action: 'review',
-                    user: 'Maria Santos',
-                    target: 'Guia de Utilização',
-                    timestamp: 'há 4 horas'
-                },
-                {
-                    id: 3,
-                    action: 'approve',
-                    user: 'Admin Sistema',
-                    target: 'Protocolo de Segurança',
-                    timestamp: 'há 1 dia'
-                },
-                {
-                    id: 4,
-                    action: 'comment',
-                    user: 'Pedro Costa',
-                    target: 'Manual Técnico',
-                    timestamp: 'há 2 dias'
-                }
-            ];
+            emptyActivity.classList.remove('hidden');
+            return;
+        }
 
-            if (activities.length === 0) {
-                emptyActivity.classList.remove('hidden');
-                return;
-            }
+        // Query para buscar atividades recentes
+        const activityQuery = query(
+            collection(db, 'activities'),
+            where('userId', '==', currentUser.uid),
+            orderBy('timestamp', 'desc'),
+            limit(5)
+        );
 
-            renderActivityFeed(activities);
+        const querySnapshot = await getDocs(activityQuery);
+        
+        loadingActivity.classList.add('hidden');
 
-        }, 1500);
+        if (querySnapshot.empty) {
+            emptyActivity.classList.remove('hidden');
+            return;
+        }
+
+        const activities = [];
+        querySnapshot.forEach((doc) => {
+            const activityData = doc.data();
+            activities.push({
+                id: doc.id,
+                ...activityData
+            });
+        });
+
+        renderActivityFeed(activities);
 
     } catch (error) {
         console.error('Erro ao carregar feed de atividade:', error);
         loadingActivity.classList.add('hidden');
         emptyActivity.classList.remove('hidden');
+        // Fallback para dados mock
+        loadMockActivity();
     }
+}
+
+// Fallback para atividade mock
+function loadMockActivity() {
+    setTimeout(() => {
+        loadingActivity.classList.add('hidden');
+        emptyActivity.classList.remove('hidden');
+    }, 1500);
 }
 
 // Render activity feed
 function renderActivityFeed(activities) {
+    activityFeed.innerHTML = ''; // Limpar conteúdo anterior
+
     const activityItems = activities.map(activity => `
         <div class="activity-item slide-in">
             <div class="text-sm">
-                <span class="font-medium text-gray-900">${activity.user}</span>
+                <span class="font-medium text-gray-900">${activity.userName || 'Utilizador'}</span>
                 <span class="text-gray-600">${getActionText(activity.action)}</span>
                 <span class="font-medium text-gray-900">${activity.target}</span>
             </div>
-            <div class="text-xs text-gray-400 mt-1">${activity.timestamp}</div>
+            <div class="text-xs text-gray-400 mt-1">${formatTimestamp(activity.timestamp)}</div>
         </div>
     `).join('');
 
@@ -316,16 +378,62 @@ function getActionText(action) {
         'approve': 'aprovou ',
         'reject': 'rejeitou ',
         'comment': 'comentou em ',
-        'update': 'atualizou '
+        'update': 'atualizou ',
+        'create': 'criou '
     };
     return actionMap[action] || action;
 }
 
+// Format date for display
+function formatDate(timestamp) {
+    if (!timestamp) return 'Data desconhecida';
+    
+    try {
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toLocaleDateString('pt-PT');
+    } catch (error) {
+        return 'Data inválida';
+    }
+}
+
+// Format timestamp for display
+function formatTimestamp(timestamp) {
+    if (!timestamp) return 'Há algum tempo';
+    
+    try {
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Agora mesmo';
+        if (diffMins < 60) return `há ${diffMins} min`;
+        if (diffHours < 24) return `há ${diffHours} h`;
+        if (diffDays === 1) return 'há 1 dia';
+        if (diffDays < 7) return `há ${diffDays} dias`;
+        
+        return date.toLocaleDateString('pt-PT');
+    } catch (error) {
+        return 'Há algum tempo';
+    }
+}
+
 // Show error message
 function showError(message) {
-    // You could implement a toast notification system here
+    // Podemos implementar um sistema de notificação toast aqui
     console.error('Erro:', message);
-    alert(message); // Simple alert for now
+    
+    // Mostrar alerta simples por enquanto
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'message-fixed message-error';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 5000);
 }
 
 // Initialize dashboard when DOM is loaded
@@ -339,6 +447,8 @@ if (typeof module !== 'undefined' && module.exports) {
         loadRecentManuals,
         loadActivityFeed,
         getStatusText,
-        getActionText
+        getActionText,
+        formatDate,
+        formatTimestamp
     };
 }

@@ -1,8 +1,23 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /manuals/{manualId}/{versionId} {
-      allow read, write: if request.auth != null;
+    // Manuais - apenas autores e revisores podem aceder
+    match /manuals/{manualId}/{fileName} {
+      allow read, write: if request.auth != null && 
+        (request.auth.uid == resource.metadata.author || 
+         request.auth.uid in resource.metadata.allowedUsers ||
+         resource.metadata.isPublic == true);
+    }
+    
+    // Avatars de utilizador
+    match /avatars/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Ficheiros temporários (apenas o próprio utilizador)
+    match /temp/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
