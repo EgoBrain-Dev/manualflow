@@ -88,9 +88,15 @@
                 </div>
 
                 <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
-                        Descrição
-                    </label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="description" class="block text-sm font-medium text-gray-700">
+                            Descrição
+                        </label>
+                        <button type="button" id="generateDescriptionBtn" 
+                                class="text-sm text-blue-600 hover:text-blue-500 font-medium flex items-center">
+                            <i class="fas fa-robot mr-1"></i>Gerar com IA
+                        </button>
+                    </div>
                     <textarea id="description" name="description" rows="3"
                               class="input-modern w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                               placeholder="Descreva brevemente o conteúdo deste manual..."></textarea>
@@ -231,6 +237,7 @@
 
     <!-- Scripts -->
     <script src="js/firebase-env.js"></script>
+    <script src="js/pwa.js"></script>
     <script type="module" src="js/upload.js"></script>
 </body>
 </html>

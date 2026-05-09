@@ -182,7 +182,8 @@ googleSignInBtn.addEventListener('click', async () => {
         }, 500);
         
     } catch (error) {
-        let errorMessage = 'Erro ao conectar com Google. Tente novamente.';
+        console.error('Erro detalhado do Google SignIn:', error);
+        let errorMessage = 'Erro ao conectar com Google: ' + (error.message || error.code || 'Erro desconhecido');
         
         switch (error.code) {
             case 'auth/popup-closed-by-user':
@@ -193,6 +194,9 @@ googleSignInBtn.addEventListener('click', async () => {
                 break;
             case 'auth/network-request-failed':
                 errorMessage = 'Erro de conexão. Verifique sua internet.';
+                break;
+            case 'auth/unauthorized-domain':
+                errorMessage = 'Este domínio (URL) não está autorizado no Firebase. Verifique se está a usar localhost.';
                 break;
         }
         

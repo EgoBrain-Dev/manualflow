@@ -13,19 +13,32 @@ import {
     browserSessionPersistence,
     sendPasswordResetEmail,
     updateProfile,
-    sendEmailVerification
+    sendEmailVerification,
+    GoogleAuthProvider,
+    signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { 
     getFirestore,
     collection,
     getDocs,
+    getDoc,
+    doc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    setDoc,
     query,
     where,
     orderBy,
     limit,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { 
+    getStorage, 
+    ref, 
+    uploadBytesResumable, 
+    getDownloadURL 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // Configuração do Firebase para o seu projeto usando variável de ambiente
 const firebaseConfig = {
@@ -62,12 +75,24 @@ export {
     sendPasswordResetEmail,
     updateProfile,
     sendEmailVerification,
+    GoogleAuthProvider,
+    signInWithPopup,
     // Firestore functions
     collection,
     getDocs,
+    getDoc,
+    doc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    setDoc,
     query,
     where,
     orderBy,
     limit,
-    serverTimestamp
+    serverTimestamp,
+    // Storage functions
+    ref,
+    uploadBytesResumable,
+    getDownloadURL
 };

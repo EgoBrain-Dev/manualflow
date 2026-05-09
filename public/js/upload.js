@@ -1,16 +1,18 @@
-// Upload functionality - Sistema completo de carregamento de manuais
+// Upload functionality - Cloudinary + Firestore
 import { 
     auth,
     onAuthStateChanged,
     db,
     collection,
     addDoc,
-    serverTimestamp,
-    storage,
-    ref,
-    uploadBytesResumable,
-    getDownloadURL
+    updateDoc,
+    serverTimestamp
 } from './firebase-config.js';
+
+// Cloudinary Config
+const CLOUDINARY_CLOUD_NAME = 'dgdxox5ty';
+const CLOUDINARY_UPLOAD_PRESET = 'dgdxox5ty';
+
 
 // DOM Elements
 const uploadForm = document.getElementById('uploadForm');
@@ -45,6 +47,57 @@ function showMessage(text, type = 'error') {
             messageDiv.classList.add('hidden');
         }, 5000);
     }
+}
+
+// Função para gerar descrição com IA
+async function generateDescriptionWithAI() {
+    const title = document.getElementById('title').value.trim();
+    const category = document.getElementById('category').value;
+    
+    if (!title) {
+        showMessage('Por favor, insira um título primeiro.');
+        return;
+    }
+
+    const generateBtn = document.getElementById('generateDescriptionBtn');
+    const originalText = generateBtn.innerHTML;
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Gerando...';
+    generateBtn.disabled = true;
+
+    try {
+        // Using a simple prompt for OpenAI (you'll need to set up your API key)
+        const prompt = `Gere uma descrição concisa e profissional para um manual com o título "${title}" na categoria "${category}". A descrição deve ter no máximo 150 caracteres e destacar os principais benefícios ou conteúdo esperado.`;
+
+        // For demo purposes, using a mock response. In production, integrate with OpenAI API
+        const mockResponse = await mockOpenAIRequest(prompt);
+        
+        document.getElementById('description').value = mockResponse;
+        showMessage('Descrição gerada com sucesso!', 'success');
+    } catch (error) {
+        console.error('Erro ao gerar descrição:', error);
+        showMessage('Erro ao gerar descrição. Tente novamente.');
+    } finally {
+        generateBtn.innerHTML = originalText;
+        generateBtn.disabled = false;
+    }
+}
+
+// Mock OpenAI request (replace with real API call)
+async function mockOpenAIRequest(prompt) {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Mock responses based on category
+    const responses = {
+        'operacional': 'Manual abrangente com procedimentos operacionais padronizados, fluxos de trabalho otimizados e melhores práticas para eficiência organizacional.',
+        'tecnologia': 'Guia técnico detalhado com configurações, troubleshooting e implementação de soluções tecnológicas para usuários e administradores.',
+        'rh': 'Documento essencial contendo políticas de recursos humanos, direitos trabalhistas, benefícios e procedimentos administrativos.',
+        'qualidade': 'Manual de controle de qualidade com padrões, auditorias, métricas e processos para garantia da excelência operacional.',
+        'seguranca': 'Protocolos de segurança abrangentes incluindo prevenção de riscos, procedimentos de emergência e conformidade regulamentar.',
+        'outro': 'Manual informativo com orientações detalhadas, melhores práticas e procedimentos específicos para o tema abordado.'
+    };
+    
+    return responses[document.getElementById('category').value] || responses['outro'];
 }
 
 // Função para mostrar loading
@@ -104,44 +157,46 @@ function handleFileSelect(file) {
     dropzone.classList.add('hidden');
 }
 
-// Upload para Firebase Storage
-async function uploadToStorage(file, manualId) {
+// Upload para Cloudinary com barra de progresso
+function uploadToCloudinary(file, manualId, onProgress) {
     return new Promise((resolve, reject) => {
-        const storageRef = ref(storage, `manuals/${manualId}/${file.name}`);
-        
-        uploadTask = uploadBytesResumable(storageRef, file);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('folder', `manualflow/${manualId}`);
+        formData.append('public_id', `${manualId}_${Date.now()}`);
 
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                // Progresso do upload (opcional - podemos adicionar uma barra de progresso)
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                console.log('Upload progress: ' + progress + '%');
-            },
-            (error) => {
-                reject(error);
-            },
-            async () => {
-                // Upload completo
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve(downloadURL);
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable && onProgress) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                onProgress(percent);
             }
-        );
+        });
+
+        xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                resolve(response.secure_url);
+            } else {
+                const errorData = JSON.parse(xhr.responseText);
+                reject(new Error('Erro Cloudinary: ' + (errorData.error?.message || xhr.status)));
+            }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Erro de rede no upload.')));
+        xhr.addEventListener('abort', () => reject(new Error('Upload cancelado.')));
+
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/raw/upload`);
+        xhr.send(formData);
     });
 }
 
-// Salvar dados no Firestore
-async function saveToFirestore(manualData, fileUrl) {
-    const manualDoc = {
-        ...manualData,
-        fileUrl: fileUrl,
-        fileName: selectedFile.name,
-        fileSize: selectedFile.size,
-        fileType: selectedFile.type,
-        updatedAt: serverTimestamp()
-    };
-
-    const docRef = await addDoc(collection(db, 'manuals'), manualDoc);
-    return docRef.id;
+// Mostrar progresso na UI
+function updateProgressUI(percent) {
+    const submitBtn = uploadForm.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>A carregar... ${percent}%`;
 }
 
 // Registrar atividade
@@ -219,27 +274,33 @@ async function handleUpload(e) {
             throw new Error('A versão é obrigatória.');
         }
 
-        // Criar documento no Firestore primeiro para obter ID
+        // 1. Criar documento no Firestore para obter o ID
         const tempManualRef = await addDoc(collection(db, 'manuals'), {
             ...manualData,
-            fileUrl: 'pending', // Placeholder
+            fileUrl: 'pending',
             fileName: selectedFile.name,
             fileSize: selectedFile.size,
             fileType: selectedFile.type
         });
 
-        // Fazer upload do arquivo
-        const fileUrl = await uploadToStorage(selectedFile, tempManualRef.id);
+        // 2. Fazer upload para o Cloudinary com progresso real
+        const fileUrl = await uploadToCloudinary(
+            selectedFile, 
+            tempManualRef.id,
+            updateProgressUI
+        );
 
-        // Atualizar documento com URL real
-        await saveToFirestore(manualData, fileUrl);
+        // 3. Atualizar o documento com a URL real do Cloudinary
+        await updateDoc(tempManualRef, {
+            fileUrl: fileUrl,
+            updatedAt: serverTimestamp()
+        });
 
-        // Registrar atividade
+        // 4. Registrar atividade
         await logActivity(tempManualRef.id, manualData.title);
 
         showMessage('✅ Manual carregado com sucesso!', 'success');
 
-        // Redirecionar para dashboard após sucesso
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 2000);
@@ -278,6 +339,9 @@ async function handleUpload(e) {
 function setupEventListeners() {
     // Form submission
     uploadForm.addEventListener('submit', handleUpload);
+
+    // Generate description with AI
+    document.getElementById('generateDescriptionBtn').addEventListener('click', generateDescriptionWithAI);
 
     // File input change
     fileInput.addEventListener('change', (e) => {

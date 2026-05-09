@@ -180,33 +180,12 @@ async function loadStats() {
 
     } catch (error) {
         console.error('Erro ao carregar estatísticas:', error);
-        // Fallback para dados mock se Firestore falhar
-        loadMockStats();
+        // Show error message instead of fallback
+        showError('Erro ao carregar estatísticas. Tente recarregar a página.');
     }
 }
 
-// Fallback para dados mock
-function loadMockStats() {
-    const stats = {
-        total: 0,
-        inReview: 0,
-        approved: 0,
-        rejected: 0,
-        draft: 0,
-        published: 0
-    };
 
-    totalManuals.textContent = stats.total;
-    inReview.textContent = stats.inReview;
-    approved.textContent = stats.approved;
-    rejected.textContent = stats.rejected;
-    
-    statusDraft.textContent = stats.draft;
-    statusReview.textContent = stats.inReview;
-    statusApproved.textContent = stats.approved;
-    statusRejected.textContent = stats.rejected;
-    statusPublished.textContent = stats.published;
-}
 
 // Load recent manuals from Firestore
 async function loadRecentManuals() {
@@ -249,18 +228,11 @@ async function loadRecentManuals() {
         console.error('Erro ao carregar manuais recentes:', error);
         loadingManuals.classList.add('hidden');
         emptyManuals.classList.remove('hidden');
-        // Fallback para dados mock
-        loadMockManuals();
+        showError('Erro ao carregar manuais recentes.');
     }
 }
 
-// Fallback para manuais mock
-function loadMockManuals() {
-    setTimeout(() => {
-        loadingManuals.classList.add('hidden');
-        emptyManuals.classList.remove('hidden');
-    }, 1000);
-}
+
 
 // Render recent manuals
 function renderRecentManuals(manuals) {
@@ -327,18 +299,11 @@ async function loadActivityFeed() {
         console.error('Erro ao carregar feed de atividade:', error);
         loadingActivity.classList.add('hidden');
         emptyActivity.classList.remove('hidden');
-        // Fallback para dados mock
-        loadMockActivity();
+        showError('Erro ao carregar atividade recente.');
     }
 }
 
-// Fallback para atividade mock
-function loadMockActivity() {
-    setTimeout(() => {
-        loadingActivity.classList.add('hidden');
-        emptyActivity.classList.remove('hidden');
-    }, 1500);
-}
+
 
 // Render activity feed
 function renderActivityFeed(activities) {

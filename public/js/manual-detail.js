@@ -435,13 +435,147 @@ function hideConfirmModal() {
 
 // Ações dos manuais
 function viewManual(manualId) {
-    // TODO: Implementar visualização do manual
-    showMessage('Funcionalidade de visualização em desenvolvimento.', 'info');
+    const manual = manuals.find(m => m.id === manualId);
+    if (manual && manual.fileUrl && manual.fileUrl !== 'pending') {
+        window.open(manual.fileUrl, '_blank');
+    } else {
+        showMessage('Este manual ainda não tem um ficheiro associado ou está pendente.', 'error');
+    }
 }
 
 function editManual(manualId) {
-    // TODO: Implementar edição do manual
-    showMessage('Funcionalidade de edição em desenvolvimento.', 'info');
+    const manual = manuals.find(m => m.id === manualId);
+    if (!manual) return;
+    
+    // Verificar se o modal já existe
+    let editModal = document.getElementById('editManualModal');
+    
+    if (!editModal) {
+        // Criar o HTML do modal dinamicamente com Design Profissional (Tailwind)
+        const modalHTML = `
+        <div id="editManualModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 slide-up">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-edit text-blue-600 mr-2"></i> Editar Detalhes
+                    </h3>
+                    <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 focus-visible transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="editManualForm" class="space-y-4">
+                    <input type="hidden" id="editManualId">
+                    
+                    <div>
+                        <label for="editTitle" class="block text-sm font-medium text-gray-700 mb-1">Título do Manual *</label>
+                        <input type="text" id="editTitle" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50 hover:bg-white"
+                               placeholder="Digite o título do manual">
+                    </div>
+                    
+                    <div>
+                        <label for="editDescription" class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                        <textarea id="editDescription" rows="3" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50 hover:bg-white"
+                                  placeholder="Descreva brevemente o manual"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="editCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
+                            <select id="editCategory" required 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50 hover:bg-white">
+                                <option value="rh">Recursos Humanos</option>
+                                <option value="it">Tecnologia (IT)</option>
+                                <option value="ops">Operações</option>
+                                <option value="fin">Finanças</option>
+                                <option value="other">Outro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="editVersion" class="block text-sm font-medium text-gray-700 mb-1">Versão *</label>
+                            <input type="text" id="editVersion" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50 hover:bg-white"
+                                   placeholder="Ex: v1.0">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-5 border-t mt-4">
+                        <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium rounded-lg hover:bg-gray-100 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnSaveEdit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center shadow-sm hover:shadow transition-all">
+                            <i class="fas fa-save mr-2"></i>
+                            Guardar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        document.getElementById('editManualForm').addEventListener('submit', handleEditSubmit);
+        editModal = document.getElementById('editManualModal');
+    }
+    
+    // Preencher dados do manual no modal
+    document.getElementById('editManualId').value = manual.id;
+    document.getElementById('editTitle').value = manual.title || '';
+    document.getElementById('editDescription').value = manual.description || '';
+    
+    const categorySelect = document.getElementById('editCategory');
+    const optionExists = Array.from(categorySelect.options).some(opt => opt.value === manual.category);
+    categorySelect.value = optionExists ? manual.category : 'other';
+    
+    document.getElementById('editVersion').value = manual.version || 'v1.0';
+    
+    // Mostrar modal
+    editModal.classList.remove('hidden');
+}
+
+window.closeEditModal = function() {
+    const editModal = document.getElementById('editManualModal');
+    if (editModal) {
+        editModal.classList.add('hidden');
+    }
+};
+
+async function handleEditSubmit(e) {
+    e.preventDefault();
+    
+    const manualId = document.getElementById('editManualId').value;
+    const title = document.getElementById('editTitle').value.trim();
+    const description = document.getElementById('editDescription').value.trim();
+    const category = document.getElementById('editCategory').value;
+    const version = document.getElementById('editVersion').value.trim();
+    
+    const submitBtn = document.getElementById('btnSaveEdit');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>A Guardar...';
+    submitBtn.disabled = true;
+    
+    try {
+        const manualRef = doc(db, 'manuals', manualId);
+        await updateDoc(manualRef, {
+            title,
+            description,
+            category,
+            version,
+            updatedAt: serverTimestamp()
+        });
+        
+        showMessage('✅ Detalhes do manual atualizados com sucesso!', 'success');
+        closeEditModal();
+        await loadManuals(); // Recarregar a lista para ver a alteração
+    } catch (error) {
+        console.error('Erro ao editar manual:', error);
+        showMessage('Erro ao atualizar manual. Verifique a consola.');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
 }
 
 async function sendForReview(manualId) {
