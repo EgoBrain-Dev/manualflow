@@ -284,7 +284,7 @@ function handleEdit() {
 // Enviar para revisão
 function handleReview() {
     if (isOwner && currentManualId) {
-        window.location.href = `manual-review.html?manualId=${currentManualId}`;
+        window.location.href = `manual-review.html?id=${currentManualId}`;
     }
 }
 

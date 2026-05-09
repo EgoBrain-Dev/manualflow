@@ -39,6 +39,7 @@ let editingManualId = null;
 let currentUser = null;
 let selectedFile = null;
 let uploadTask = null;
+let currentManualReviewers = [];
 
 // Função para mostrar mensagens
 function showMessage(text, type = 'error') {
@@ -266,8 +267,8 @@ async function handleUpload(e) {
                     .split(',')
                     .map(email => email.trim())
                     .filter(email => email.length > 0),
-            reviewers: [],
-            currentReviewer: '',
+            reviewers: editingManualId ? currentManualReviewers : [currentUser.uid],
+            currentReviewer: currentUser.uid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         };
@@ -299,6 +300,8 @@ async function handleUpload(e) {
                 fileName: selectedFile.name,
                 fileSize: selectedFile.size,
                 fileType: selectedFile.type,
+                reviewers: manualData.reviewers,
+                currentReviewer: manualData.currentReviewer,
                 updatedAt: serverTimestamp()
             });
         } else {
@@ -437,6 +440,7 @@ async function loadManualForEdit(manualId) {
 
         const manualData = manualDoc.data();
         editingManualId = manualId;
+        currentManualReviewers = manualData.reviewers || [];
         uploadPageTitle.textContent = 'Atualizar Versão do Manual';
         uploadPageSubtitle.textContent = `Novo upload para ${manualData.title || 'manual existente'}`;
         document.getElementById('title').value = manualData.title || '';

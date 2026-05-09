@@ -80,6 +80,10 @@ function showMessage(text, type = 'error') {
     }
 }
 
+function showPage() {
+    document.body.style.visibility = 'visible';
+}
+
 // Formatar data
 function formatDate(timestamp) {
     if (!timestamp) return '-';
@@ -145,8 +149,8 @@ async function loadManual(manualId) {
             ...manualDoc.data()
         };
 
-        // Verificar se o usuário é revisor deste manual
-        if (!currentManual.reviewers?.includes(currentUser.uid)) {
+        // Verificar se o usuário é revisor deste manual ou se é o autor do manual
+        if (!currentManual.reviewers?.includes(currentUser.uid) && currentManual.author !== currentUser.uid) {
             throw new Error('Não tem permissão para rever este manual');
         }
 
