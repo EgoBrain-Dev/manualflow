@@ -286,11 +286,11 @@ function renderRecentManuals(manuals) {
     recentManuals.innerHTML = ''; // Limpar conteúdo anterior
 
     const manualItems = manuals.map(manual => `
-        <div class="manual-item p-4 rounded-lg slide-in">
+        <a href="manual-view.html?id=${manual.id}" class="manual-item p-4 rounded-lg slide-in block hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <div class="flex justify-between items-start">
                 <div class="flex-1">
-                    <h3 class="font-medium text-gray-900 text-sm mb-1">${manual.title || 'Sem título'}</h3>
-                    <div class="flex items-center space-x-4 text-xs text-gray-500">
+                    <h3 class="font-medium text-gray-900 dark:text-white text-sm mb-1">${manual.title || 'Sem título'}</h3>
+                    <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                         <span>${formatDate(manual.updatedAt)}</span>
                         <span>${manual.version || 'v1.0'}</span>
                     </div>
@@ -299,7 +299,7 @@ function renderRecentManuals(manuals) {
                     ${getStatusText(manual.status)}
                 </span>
             </div>
-        </div>
+        </a>
     `).join('');
 
     recentManuals.insertAdjacentHTML('beforeend', manualItems);

@@ -1,0 +1,110 @@
+/* Manual View Styles */
+
+.message-fixed {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-width: 400px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.message-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.dark .message-error {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #fca5a5;
+    border-color: rgba(220, 38, 38, 0.3);
+}
+
+.message-success {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.dark .message-success {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.message-info {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.dark .message-info {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Modal Styles */
+#previewModal {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Button styles */
+button {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* PDF Viewer */
+#pdfViewer {
+    background-color: #f3f4f6;
+}
+
+.dark #pdfViewer {
+    background-color: #111827;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .message-fixed {
+        max-width: calc(100vw - 40px);
+        top: 10px;
+        right: 20px;
+        left: 20px;
+    }
+
+    #previewModal .bg-white {
+        width: 95vw;
+        height: 90vh;
+    }
+}
