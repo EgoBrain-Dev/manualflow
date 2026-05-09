@@ -42,6 +42,8 @@ const emptyManuals = document.getElementById('emptyManuals');
 const activityFeed = document.getElementById('activityFeed');
 const loadingActivity = document.getElementById('loadingActivity');
 const emptyActivity = document.getElementById('emptyActivity');
+const notificationDot = document.getElementById('notificationDot');
+const notificationButton = document.getElementById('notificationButton');
 
 // Current user data
 let currentUser = null;
@@ -56,13 +58,21 @@ function initDashboard() {
             currentUser = user;
             updateUserInterface(user);
             loadDashboardData();
+            showPage();
         } else {
-            // Redirect to login if not authenticated
             window.location.href = 'login.html';
         }
     });
 
     setupEventListeners();
+}
+
+function showPage() {
+    document.body.style.visibility = 'visible';
+}
+
+function hidePage() {
+    document.body.style.visibility = 'hidden';
 }
 
 // Update user interface with user data
@@ -100,6 +110,16 @@ function setupEventListeners() {
         }
     });
 
+    // Notification button
+    if (notificationButton) {
+        notificationButton.addEventListener('click', () => {
+            showMessage('Sem notificações novas no momento.', 'info');
+            if (notificationDot) {
+                notificationDot.classList.add('hidden');
+            }
+        });
+    }
+
     // Prevent dropdown close when clicking inside
     dropdownMenu.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -112,11 +132,38 @@ async function loadDashboardData() {
         await Promise.all([
             loadStats(),
             loadRecentManuals(),
-            loadActivityFeed()
+            loadActivityFeed(),
+            loadNotifications()
         ]);
     } catch (error) {
         console.error('Erro ao carregar dados do dashboard:', error);
         showError('Erro ao carregar dados. Tente recarregar a página.');
+    }
+}
+
+// Load unread notifications
+async function loadNotifications() {
+    try {
+        if (!currentUser || !notificationDot) return;
+
+        const notificationsQuery = query(
+            collection(db, 'notifications'),
+            where('userId', '==', currentUser.uid),
+            where('read', '==', false),
+            limit(1)
+        );
+
+        const snapshot = await getDocs(notificationsQuery);
+        if (!snapshot.empty) {
+            notificationDot.classList.remove('hidden');
+        } else {
+            notificationDot.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar notificações:', error);
+        if (notificationDot) {
+            notificationDot.classList.add('hidden');
+        }
     }
 }
 

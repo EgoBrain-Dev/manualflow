@@ -5,7 +5,12 @@ import {
     updateProfile,
     sendEmailVerification,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    db,
+    doc,
+    getDoc,
+    setDoc,
+    serverTimestamp
 } from './firebase-config.js';
 
 // Elementos DOM
@@ -200,6 +205,21 @@ registerForm.addEventListener('submit', async (e) => {
         await updateProfile(user, {
             displayName: name
         });
+
+        // Criar documento de usuário no Firestore
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                name: name,
+                email: user.email,
+                role: 'editor',
+                status: 'Ativa',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+        }
 
         // Enviar email de verificação
         await sendEmailVerification(user);

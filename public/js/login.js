@@ -7,7 +7,12 @@ import {
     browserSessionPersistence,
     sendPasswordResetEmail,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    db,
+    doc,
+    getDoc,
+    setDoc,
+    serverTimestamp
 } from './firebase-config.js';
 
 // Elementos DOM
@@ -173,6 +178,20 @@ googleSignInBtn.addEventListener('click', async () => {
         
         const result = await signInWithPopup(auth, googleProvider);
         const user = result.user;
+
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                name: user.displayName || user.email.split('@')[0],
+                email: user.email,
+                role: 'editor',
+                status: 'Ativa',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+        }
         
         showMessage(`✅ Bem-vindo(a), ${user.displayName || 'Utilizador'}!`, 'success');
         

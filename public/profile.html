@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil - ManualFlow</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body class="bg-gray-50 min-h-screen" style="visibility:hidden">
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="h-8 w-8 bg-blue-600 rounded flex items-center justify-center mr-3">
+                        <i class="fas fa-book-open text-white text-sm"></i>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">ManualFlow</span>
+                </div>
+                <nav class="flex items-center space-x-6">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    <a href="upload.html" class="text-gray-600 hover:text-gray-900">Upload</a>
+                    <a href="profile.html#settings" class="text-blue-600 font-medium">Perfil</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="bg-white rounded-2xl shadow p-6">
+                <div class="flex items-center space-x-4 mb-6">
+                    <div class="h-16 w-16 bg-blue-500 text-white rounded-full flex items-center justify-center text-2xl">U</div>
+                    <div>
+                        <h1 class="text-2xl font-semibold text-gray-900" id="profileName">Utilizador</h1>
+                        <p class="text-sm text-gray-500" id="profileEmail">user@email.com</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-sm text-gray-600">
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <p class="font-medium text-blue-800">Função atual</p>
+                        <p id="profileRole">Editor</p>
+                    </div>
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <p class="font-medium text-blue-800">Membro desde</p>
+                        <p id="profileSince">-</p>
+                    </div>
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <p class="font-medium text-blue-800">Estado da conta</p>
+                        <p id="profileStatus">Ativa</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-2xl shadow p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Configurações da Conta</h2>
+                    <form id="profileForm" class="space-y-6">
+                        <div>
+                            <label for="displayName" class="block text-sm font-medium text-gray-700 mb-2">Nome completo</label>
+                            <input id="displayName" type="text" class="input-modern w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input id="displayEmail" type="email" disabled class="input-modern w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" />
+                        </div>
+                        <button type="button" id="updateProfileBtn" class="btn-primary px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center">
+                            <i class="fas fa-save mr-2"></i>Atualizar Perfil
+                        </button>
+                        <button type="button" id="sendPasswordResetBtn" class="btn-secondary px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center">
+                            <i class="fas fa-key mr-2"></i>Alterar Password (email)
+                        </button>
+                    </form>
+                </div>
+
+                <div id="settings" class="bg-white rounded-2xl shadow p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Preferências e Definições</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <h3 class="font-medium text-gray-900 mb-2">Notificações</h3>
+                            <p class="text-sm text-gray-600">Receba alertas quando um manual for submetido ou revisado.</p>
+                            <label class="inline-flex items-center mt-3">
+                                <input id="notificationsToggle" type="checkbox" class="form-checkbox h-5 w-5 text-blue-600" checked>
+                                <span class="ml-2 text-sm text-gray-700">Ativar notificações</span>
+                            </label>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <h3 class="font-medium text-gray-900 mb-2">Modo PWA</h3>
+                            <p class="text-sm text-gray-600">Instale a aplicação ManualFlow no seu dispositivo para acesso rápido.</p>
+                            <button type="button" id="installPwaBtn" class="mt-3 btn-primary px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-download mr-2"></i>Instalar App
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-gray-500">
+            <p>&copy; 2024 ManualFlow. Todos os direitos reservados.</p>
+            <p class="mt-1">
+                <a href="sobre.html" class="hover:text-blue-600">Sobre</a> •
+                <a href="contactos.html" class="hover:text-blue-600">Contactos</a> •
+                <a href="legal/termos-uso.html" class="hover:text-blue-600">Termos</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="js/firebase-env.js"></script>
+    <script type="module" src="js/firebase-config.js"></script>
+    <script src="js/pwa.js"></script>
+    <script type="module" src="js/profile.js"></script>
+</body>
+</html>

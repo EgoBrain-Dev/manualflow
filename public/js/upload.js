@@ -6,6 +6,9 @@ import {
     collection,
     addDoc,
     updateDoc,
+    doc,
+    getDoc,
+    setDoc,
     serverTimestamp
 } from './firebase-config.js';
 
@@ -27,6 +30,10 @@ const isPublicCheckbox = document.getElementById('isPublic');
 const privateSettings = document.getElementById('privateSettings');
 const userInitial = document.getElementById('userInitial');
 const userName = document.getElementById('userName');
+const uploadPageTitle = document.getElementById('uploadPageTitle');
+const uploadPageSubtitle = document.getElementById('uploadPageSubtitle');
+
+let editingManualId = null;
 
 // State
 let currentUser = null;
@@ -200,18 +207,18 @@ function updateProgressUI(percent) {
 }
 
 // Registrar atividade
-async function logActivity(manualId, manualTitle) {
+async function logActivity(manualId, manualTitle, versionNumber = '') {
     try {
         const activityData = {
             userId: currentUser.uid,
             userName: currentUser.displayName || currentUser.email.split('@')[0],
-            action: 'upload',
+            action: editingManualId ? 'version_update' : 'upload',
             target: manualTitle,
             targetId: manualId,
             targetType: 'manual',
             timestamp: serverTimestamp(),
             details: {
-                version: document.getElementById('version').value,
+                version: versionNumber || document.getElementById('version').value,
                 fileType: selectedFile.type
             }
         };
@@ -252,7 +259,7 @@ async function handleUpload(e) {
                 .filter(tag => tag.length > 0),
             author: currentUser.uid,
             authorName: currentUser.displayName || currentUser.email.split('@')[0],
-            status: 'draft',
+            status: editingManualId ? 'review' : 'draft',
             isPublic: document.getElementById('isPublic').checked,
             allowedUsers: document.getElementById('isPublic').checked ? 
                 [] : document.getElementById('allowedUsers').value
@@ -274,30 +281,58 @@ async function handleUpload(e) {
             throw new Error('A versão é obrigatória.');
         }
 
-        // 1. Criar documento no Firestore para obter o ID
-        const tempManualRef = await addDoc(collection(db, 'manuals'), {
-            ...manualData,
-            fileUrl: 'pending',
-            fileName: selectedFile.name,
-            fileSize: selectedFile.size,
-            fileType: selectedFile.type
-        });
-
-        // 2. Fazer upload para o Cloudinary com progresso real
         const fileUrl = await uploadToCloudinary(
-            selectedFile, 
-            tempManualRef.id,
+            selectedFile,
+            editingManualId || 'new-manual',
             updateProgressUI
         );
 
-        // 3. Atualizar o documento com a URL real do Cloudinary
-        await updateDoc(tempManualRef, {
-            fileUrl: fileUrl,
+        let manualRef;
+        let manualDocId = editingManualId;
+
+        if (editingManualId) {
+            manualRef = doc(db, 'manuals', editingManualId);
+            await updateDoc(manualRef, {
+                status: 'review',
+                version: manualData.version,
+                fileUrl,
+                fileName: selectedFile.name,
+                fileSize: selectedFile.size,
+                fileType: selectedFile.type,
+                updatedAt: serverTimestamp()
+            });
+        } else {
+            const tempManualRef = await addDoc(collection(db, 'manuals'), {
+                ...manualData,
+                fileUrl: fileUrl,
+                fileName: selectedFile.name,
+                fileSize: selectedFile.size,
+                fileType: selectedFile.type
+            });
+
+            manualRef = tempManualRef;
+            manualDocId = tempManualRef.id;
+        }
+
+        const versionRef = await addDoc(collection(db, 'versions'), {
+            manualId: manualDocId,
+            fileUrl,
+            fileName: selectedFile.name,
+            fileSize: selectedFile.size,
+            fileType: selectedFile.type,
+            versionNumber: manualData.version,
+            createdBy: currentUser.uid,
+            createdByName: currentUser.displayName || currentUser.email.split('@')[0],
+            createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
 
-        // 4. Registrar atividade
-        await logActivity(tempManualRef.id, manualData.title);
+        await updateDoc(doc(db, 'manuals', manualDocId), {
+            currentVersionId: versionRef.id,
+            updatedAt: serverTimestamp()
+        });
+
+        await logActivity(manualDocId, manualData.title, manualData.version);
 
         showMessage('✅ Manual carregado com sucesso!', 'success');
 
@@ -392,13 +427,58 @@ function setupEventListeners() {
     });
 }
 
+// Load manual data for editing a version
+async function loadManualForEdit(manualId) {
+    try {
+        const manualDoc = await getDoc(doc(db, 'manuals', manualId));
+        if (!manualDoc.exists()) {
+            throw new Error('Manual não encontrado para atualização.');
+        }
+
+        const manualData = manualDoc.data();
+        editingManualId = manualId;
+        uploadPageTitle.textContent = 'Atualizar Versão do Manual';
+        uploadPageSubtitle.textContent = `Novo upload para ${manualData.title || 'manual existente'}`;
+        document.getElementById('title').value = manualData.title || '';
+        document.getElementById('description').value = manualData.description || '';
+        document.getElementById('version').value = manualData.version || 'v1.0';
+        document.getElementById('category').value = manualData.category || 'outro';
+        document.getElementById('tags').value = (manualData.tags || []).join(', ');
+        isPublicCheckbox.checked = manualData.isPublic === true;
+        if (manualData.isPublic) {
+            privateSettings.classList.add('hidden');
+        } else {
+            privateSettings.classList.remove('hidden');
+            document.getElementById('allowedUsers').value = (manualData.allowedUsers || []).join(', ');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar manual para edição:', error);
+        showMessage('Não foi possível carregar os dados do manual. Redirecionando ao upload normal.');
+        editingManualId = null;
+        uploadPageTitle.textContent = 'Carregar Manual';
+        uploadPageSubtitle.textContent = 'Adicione um novo manual à plataforma';
+    }
+}
+
+function showPage() {
+    document.body.style.visibility = 'visible';
+}
+
 // Initialize upload page
 function initUpload() {
     // Check authentication
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
             updateUserInterface(user);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const manualId = urlParams.get('manualId');
+            if (manualId) {
+                await loadManualForEdit(manualId);
+            }
+
+            showPage();
         } else {
             window.location.href = 'login.html';
         }
