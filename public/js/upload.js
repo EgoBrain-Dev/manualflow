@@ -251,7 +251,7 @@ async function handleUpload(e) {
     try {
         const reviewers = (reviewersInput?.value || '')
             .split(',')
-            .map(item => item.trim())
+            .map(item => item.trim().toLowerCase())
             .filter(item => item.length > 0);
 
         // Preparar dados do manual
@@ -271,7 +271,7 @@ async function handleUpload(e) {
             allowedUsers: document.getElementById('isPublic').checked ? 
                 [] : document.getElementById('allowedUsers').value
                     .split(',')
-                    .map(email => email.trim())
+                    .map(email => email.trim().toLowerCase())
                     .filter(email => email.length > 0),
             reviewers,
             currentReviewer: reviewers.length > 0 ? reviewers[0] : currentUser.uid,

@@ -116,6 +116,12 @@ function formatElapsedTime(startTime) {
     }
 }
 
+function includesNormalized(array, value) {
+    if (!Array.isArray(array) || value == null) return false;
+    const normalizedValue = value.toString().toLowerCase();
+    return array.some(item => item != null && item.toString().toLowerCase() === normalizedValue);
+}
+
 // Iniciar timer de revisão
 function startReviewTimer() {
     reviewStartTime = new Date();
@@ -151,7 +157,8 @@ async function loadManual(manualId) {
 
         // Verificar se o usuário é revisor deste manual ou se é o autor do manual
         const reviewers = currentManual.reviewers || [];
-        const isReviewer = reviewers.includes(currentUser.uid) || reviewers.includes(currentUser.email);
+        const userEmail = currentUser.email ? currentUser.email.toLowerCase() : '';
+        const isReviewer = includesNormalized(reviewers, currentUser.uid) || includesNormalized(reviewers, userEmail);
         if (!isReviewer && currentManual.author !== currentUser.uid) {
             throw new Error('Não tem permissão para rever este manual');
         }

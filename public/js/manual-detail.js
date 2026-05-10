@@ -24,6 +24,8 @@ const categoryFilter = document.getElementById('categoryFilter');
 const activeFilters = document.getElementById('activeFilters');
 const sortBy = document.getElementById('sortBy');
 const loadingManuals = document.getElementById('loadingManuals');
+const pageHeading = document.getElementById('pageHeading');
+const pageDescription = document.getElementById('pageDescription');
 const emptyManuals = document.getElementById('emptyManuals');
 const manualsList = document.getElementById('manualsList');
 const manualsTableBody = document.getElementById('manualsTableBody');
@@ -54,6 +56,8 @@ let manuals = [];
 let filteredManuals = [];
 let currentPage = 1;
 const itemsPerPage = 10;
+let currentMode = 'own';
+let currentUserEmail = '';
 let currentFilters = {
     search: '',
     status: 'all',
@@ -113,6 +117,12 @@ function formatRelativeTime(timestamp) {
     }
 }
 
+function includesNormalized(array, value) {
+    if (!Array.isArray(array) || value == null) return false;
+    const normalizedValue = value.toString().toLowerCase();
+    return array.some(item => item != null && item.toString().toLowerCase() === normalizedValue);
+}
+
 // Obter texto do status
 function getStatusText(status) {
     const statusMap = {
@@ -142,26 +152,96 @@ async function loadManuals() {
     try {
         if (!currentUser) return;
 
+        const urlParams = new URLSearchParams(window.location.search);
+        currentMode = urlParams.get('mode') === 'review' ? 'review' : 'own';
+        const originalEmail = currentUser.email || '';
+        currentUserEmail = originalEmail.toLowerCase();
+
+        if (pageHeading) {
+            pageHeading.textContent = currentMode === 'review' ? 'Manuais para Revisão' : 'Meus Manuais';
+        }
+        if (pageDescription) {
+            pageDescription.textContent = currentMode === 'review' ? 'Reveja os manuais atribuídos a si e conclua as revisões pendentes.' : 'Gerir e visualizar todos os seus manuais';
+        }
+
         loadingManuals.classList.remove('hidden');
         emptyManuals.classList.add('hidden');
         manualsList.classList.add('hidden');
 
-        const manualsQuery = query(
-            collection(db, 'manuals'),
-            where('author', '==', currentUser.uid),
-            orderBy('updatedAt', 'desc')
-        );
+        let manualDocs = [];
 
-        const querySnapshot = await getDocs(manualsQuery);
-        
-        manuals = [];
-        querySnapshot.forEach((doc) => {
-            const manualData = doc.data();
-            manuals.push({
-                id: doc.id,
-                ...manualData
+        if (currentMode === 'review') {
+            const reviewerQueries = [
+                query(
+                    collection(db, 'manuals'),
+                    where('reviewers', 'array-contains', currentUser.uid)
+                )
+            ];
+
+            if (currentUserEmail) {
+                reviewerQueries.push(
+                    query(
+                        collection(db, 'manuals'),
+                        where('reviewers', 'array-contains', currentUserEmail)
+                    )
+                );
+            }
+            if (originalEmail && originalEmail !== currentUserEmail) {
+                reviewerQueries.push(
+                    query(
+                        collection(db, 'manuals'),
+                        where('reviewers', 'array-contains', originalEmail)
+                    )
+                );
+            }
+
+            const snapshots = await Promise.all(reviewerQueries.map(q => getDocs(q)));
+            snapshots.forEach((snapshot) => {
+                snapshot.forEach((doc) => {
+                    manualDocs.push({ id: doc.id, ...doc.data() });
+                });
             });
-        });
+
+            // Include manuals authored by the current user as well
+            const authoredQuery = query(
+                collection(db, 'manuals'),
+                where('author', '==', currentUser.uid),
+                orderBy('updatedAt', 'desc')
+            );
+            const authoredSnapshot = await getDocs(authoredQuery);
+            authoredSnapshot.forEach((doc) => {
+                manualDocs.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Remover duplicados e ordenar por atualização mais recente
+            const uniqueManuals = {};
+            manuals = manualDocs
+                .filter(manual => {
+                    if (uniqueManuals[manual.id]) return false;
+                    uniqueManuals[manual.id] = true;
+                    return true;
+                })
+                .sort((a, b) => {
+                    const aTime = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : new Date(a.updatedAt).getTime();
+                    const bTime = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : new Date(b.updatedAt).getTime();
+                    return bTime - aTime;
+                });
+        } else {
+            const manualsQuery = query(
+                collection(db, 'manuals'),
+                where('author', '==', currentUser.uid),
+                orderBy('updatedAt', 'desc')
+            );
+
+            const querySnapshot = await getDocs(manualsQuery);
+            manuals = [];
+            querySnapshot.forEach((doc) => {
+                manuals.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+        }
 
         updateStats(manuals);
         applyFilters();
@@ -338,61 +418,91 @@ function renderManuals() {
     const manualsToShow = filteredManuals.slice(startIndex, endIndex);
 
     manualsToShow.forEach(manual => {
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-gray-50 transition-colors';
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-file text-blue-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">${manual.title || 'Sem título'}</div>
-                        <div class="text-sm text-gray-500">${manual.description || 'Sem descrição'}</div>
-                    </div>
-                </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ${manual.version || 'v1.0'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="status-badge status-${manual.status}">
-                    <i class="${getStatusIcon(manual.status)}"></i>
-                    ${getStatusText(manual.status)}
-                </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
-                ${manual.category || '-'}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${formatRelativeTime(manual.updatedAt)}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div class="flex justify-end space-x-2 action-buttons">
-                    <button onclick="viewManual('${manual.id}')" 
-                            class="action-btn view" title="Visualizar">
-                        <i class="fas fa-eye"></i>
-                    </button>
+            const isOwner = manual.author === currentUser.uid;
+            const isReviewer = includesNormalized(manual.reviewers, currentUser.uid) || includesNormalized(manual.reviewers, currentUserEmail);
+            const actions = [];
+
+            actions.push(`
+                <button onclick="viewManual('${manual.id}')" 
+                        class="action-btn view" title="Visualizar">
+                    <i class="fas fa-eye"></i>
+                </button>
+            `);
+
+            if (isOwner) {
+                actions.push(`
                     <button onclick="editManual('${manual.id}')" 
                             class="action-btn edit" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
-                    ${manual.status === 'draft' ? `
+                `);
+            }
+
+            if (isOwner && manual.status === 'draft') {
+                actions.push(`
                     <button onclick="sendForReview('${manual.id}')" 
                             class="action-btn review" title="Enviar para Revisão">
                         <i class="fas fa-paper-plane"></i>
                     </button>
-                    ` : ''}
-                    <button onclick="confirmDelete('${manual.id}', '${manual.title}')" 
+                `);
+            }
+
+            if (manual.status === 'review' && (isOwner || isReviewer)) {
+                actions.push(`
+                    <button onclick="reviewManual('${manual.id}')" 
+                            class="action-btn review" title="Rever Manual">
+                        <i class="fas fa-check"></i>
+                    </button>
+                `);
+            }
+
+            if (isOwner) {
+                const safeTitle = (manual.title || 'manual').replace(/'/g, "\\'");
+                actions.push(`
+                    <button onclick="confirmDelete('${manual.id}', '${safeTitle}')" 
                             class="action-btn delete" title="Eliminar">
                         <i class="fas fa-trash"></i>
                     </button>
-                </div>
-            </td>
-        `;
-        manualsTableBody.appendChild(row);
-    });
+                `);
+            }
 
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50 transition-colors';
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-file text-blue-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900">${manual.title || 'Sem título'}</div>
+                            <div class="text-sm text-gray-500">${manual.description || 'Sem descrição'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${manual.version || 'v1.0'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="status-badge status-${manual.status}">
+                        <i class="${getStatusIcon(manual.status)}"></i>
+                        ${getStatusText(manual.status)}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                    ${manual.category || '-'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${formatRelativeTime(manual.updatedAt)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div class="flex justify-end space-x-2 action-buttons">
+                        ${actions.join('')}
+                    </div>
+                </td>
+            `;
+            manualsTableBody.appendChild(row);
+        });
     loadingManuals.classList.add('hidden');
     emptyManuals.classList.add('hidden');
     manualsList.classList.remove('hidden');
@@ -602,6 +712,10 @@ function confirmDelete(manualId, manualTitle) {
     );
 }
 
+function reviewManual(manualId) {
+    window.location.href = `manual-review.html?id=${manualId}`;
+}
+
 async function deleteManual(manualId) {
     try {
         const manualRef = doc(db, 'manuals', manualId);
@@ -716,6 +830,7 @@ window.removeFilter = removeFilter;
 window.viewManual = viewManual;
 window.editManual = editManual;
 window.sendForReview = sendForReview;
+window.reviewManual = reviewManual;
 window.confirmDelete = confirmDelete;
 
 // Initialize when DOM is loaded
