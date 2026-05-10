@@ -180,6 +180,16 @@ function hideOfflineMessage() {
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
+window.addEventListener('error', (event) => {
+  console.error('Runtime error detected:', event.error || event.message);
+  alert(`Erro de aplicação: ${event.message || event.error?.message || 'Ver console para detalhes.'}`);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  alert(`Erro assíncrono: ${event.reason?.message || event.reason || 'Ver console para detalhes.'}`);
+});
+
 // Initialize PWA features
 document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();

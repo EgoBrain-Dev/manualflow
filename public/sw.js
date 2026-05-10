@@ -71,42 +71,57 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-  event.respondWith(
-    caches.match(event.request)
-      .then(function(response) {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
+  const requestUrl = new URL(event.request.url);
 
-        return fetch(event.request).then(
-          function(response) {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
+  // Always let Firebase and Cloudinary requests go to network
+  if (requestUrl.hostname.includes('cloudinary.com') ||
+      requestUrl.hostname.includes('firebaseapp.com') ||
+      requestUrl.hostname.includes('googleapis.com') ||
+      requestUrl.hostname.includes('firebasestorage.googleapis.com')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
-            // IMPORTANT: Clone the response. A response is a stream
-            // and because we want the browser to consume the response
-            // as well as the cache consuming the response, we need
-            // to clone it so we have two streams.
-            var responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then(function(cache) {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
+  // Network-first for navigation requests so pages always load fresh
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then(function(response) {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) {
+              cache.put(event.request, responseToCache);
+            });
           }
-        );
-      })
-      .catch(function() {
-        // Return offline page or fallback
-        if (event.request.destination === 'document') {
-          return caches.match('/index.html');
+          return response;
+        })
+        .catch(function() {
+          return caches.match(event.request).then(function(response) {
+            return response || caches.match('/index.html');
+          });
+        })
+    );
+    return;
+  }
+
+  // Cache-first for static assets
+  event.respondWith(
+    caches.match(event.request).then(function(response) {
+      return response || fetch(event.request).then(function(networkResponse) {
+        if (!networkResponse || networkResponse.status !== 200) {
+          return networkResponse;
         }
-      })
+
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then(function(cache) {
+          cache.put(event.request, responseToCache);
+        });
+
+        return networkResponse;
+      }).catch(function() {
+        return response;
+      });
+    })
   );
 });
 
