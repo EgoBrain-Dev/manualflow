@@ -442,7 +442,7 @@ async function submitReview(assessment, feedback, actionPoints) {
 
         // Redirecionar após sucesso
         setTimeout(() => {
-            window.location.href = 'review-dashboard.html';
+            window.location.href = 'index.html';
         }, 2000);
 
     } catch (error) {
