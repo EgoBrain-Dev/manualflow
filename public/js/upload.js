@@ -32,6 +32,7 @@ const userInitial = document.getElementById('userInitial');
 const userName = document.getElementById('userName');
 const uploadPageTitle = document.getElementById('uploadPageTitle');
 const uploadPageSubtitle = document.getElementById('uploadPageSubtitle');
+const reviewersInput = document.getElementById('reviewers');
 
 let editingManualId = null;
 
@@ -248,6 +249,11 @@ async function handleUpload(e) {
     setLoading(true);
 
     try {
+        const reviewers = (reviewersInput?.value || '')
+            .split(',')
+            .map(item => item.trim())
+            .filter(item => item.length > 0);
+
         // Preparar dados do manual
         const manualData = {
             title: document.getElementById('title').value.trim(),
@@ -260,15 +266,15 @@ async function handleUpload(e) {
                 .filter(tag => tag.length > 0),
             author: currentUser.uid,
             authorName: currentUser.displayName || currentUser.email.split('@')[0],
-            status: editingManualId ? 'review' : 'draft',
+            status: editingManualId ? 'review' : reviewers.length > 0 ? 'review' : 'draft',
             isPublic: document.getElementById('isPublic').checked,
             allowedUsers: document.getElementById('isPublic').checked ? 
                 [] : document.getElementById('allowedUsers').value
                     .split(',')
                     .map(email => email.trim())
                     .filter(email => email.length > 0),
-            reviewers: editingManualId ? currentManualReviewers : [currentUser.uid],
-            currentReviewer: currentUser.uid,
+            reviewers,
+            currentReviewer: reviewers.length > 0 ? reviewers[0] : currentUser.uid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         };
@@ -340,7 +346,7 @@ async function handleUpload(e) {
         showMessage('✅ Manual carregado com sucesso!', 'success');
 
         setTimeout(() => {
-            window.location.href = 'index.html';
+            window.location.href = `manual-view.html?id=${manualDocId}`;
         }, 2000);
 
     } catch (error) {
@@ -455,6 +461,7 @@ async function loadManualForEdit(manualId) {
             privateSettings.classList.remove('hidden');
             document.getElementById('allowedUsers').value = (manualData.allowedUsers || []).join(', ');
         }
+        document.getElementById('reviewers').value = (manualData.reviewers || []).join(', ');
     } catch (error) {
         console.error('Erro ao carregar manual para edição:', error);
         showMessage('Não foi possível carregar os dados do manual. Redirecionando ao upload normal.');

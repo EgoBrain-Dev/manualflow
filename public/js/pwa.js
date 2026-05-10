@@ -32,11 +32,9 @@ window.addEventListener('appinstalled', (evt) => {
 
 // Show install button in header
 function showInstallButton() {
-  // Try to find the user menu area in header
-  const userMenu = document.getElementById('userMenu') || document.querySelector('header');
-  
-  if (!userMenu || document.getElementById('installButtonContainer')) {
-    return; // Already shown or no header found
+  const header = document.querySelector('header');
+  if (!header || document.getElementById('installButtonContainer')) {
+    return;
   }
 
   const installContainer = document.createElement('div');
@@ -49,16 +47,8 @@ function showInstallButton() {
     </button>
   `;
 
-  // Insert before user menu or at the end of header
-  const headerContent = document.querySelector('header .flex.justify-between');
-  if (headerContent) {
-    const userActions = headerContent.querySelector('.flex.items-center.space-x-');
-    if (userActions) {
-      userActions.insertAdjacentElement('beforebegin', installContainer);
-    } else {
-      headerContent.appendChild(installContainer);
-    }
-  }
+  const headerContent = header.querySelector('.flex.justify-between') || header;
+  headerContent.appendChild(installContainer);
 
   const installButton = document.getElementById('installButton');
   if (installButton) {
@@ -74,12 +64,10 @@ function hideInstallButton() {
 }
 
 function installPWA() {
-  // Hide the app provided install promotion
   hideInstallButton();
-  // Show the install prompt
+
   if (deferredPrompt) {
     deferredPrompt.prompt();
-    // Wait for the user to respond to the prompt
     deferredPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
         console.log('User accepted the install prompt');
@@ -88,6 +76,8 @@ function installPWA() {
       }
       deferredPrompt = null;
     });
+  } else {
+    alert('Instalação PWA indisponível. Use o menu do navegador para adicionar à tela inicial.');
   }
 }
 
@@ -106,19 +96,28 @@ if (isPWA()) {
 function initThemeToggle() {
   const savedTheme = localStorage.getItem('theme') || 'light';
   setTheme(savedTheme);
-  
-  // Create theme toggle button
-  const userMenu = document.getElementById('userMenu');
-  if (userMenu && !document.getElementById('themeToggle')) {
-    const themeToggle = document.createElement('button');
-    themeToggle.id = 'themeToggle';
-    themeToggle.className = 'p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors';
-    themeToggle.title = 'Alternar tema';
-    themeToggle.innerHTML = '<i class="fas fa-moon text-lg"></i>';
-    themeToggle.addEventListener('click', toggleTheme);
-    
-    userMenu.parentNode.insertBefore(themeToggle, userMenu);
+  createThemeToggle();
+}
+
+function createThemeToggle() {
+  if (document.getElementById('themeToggle')) {
+    return;
   }
+
+  const header = document.querySelector('header');
+  if (!header) {
+    return;
+  }
+
+  const themeToggle = document.createElement('button');
+  themeToggle.id = 'themeToggle';
+  themeToggle.className = 'p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors ml-4';
+  themeToggle.title = 'Alternar tema';
+  themeToggle.innerHTML = '<i class="fas fa-moon text-lg"></i>';
+  themeToggle.addEventListener('click', toggleTheme);
+
+  const headerContent = header.querySelector('.flex.justify-between') || header;
+  headerContent.appendChild(themeToggle);
 }
 
 function setTheme(theme) {

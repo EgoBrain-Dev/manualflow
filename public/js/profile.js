@@ -65,6 +65,7 @@ async function updateUI(user) {
     profileRole.textContent = currentUserDoc?.role ? currentUserDoc.role.charAt(0).toUpperCase() + currentUserDoc.role.slice(1) : 'Editor';
     profileSince.textContent = currentUserDoc?.createdAt ? new Date(currentUserDoc.createdAt.seconds * 1000).toLocaleDateString('pt-PT') : '-';
     profileStatus.textContent = currentUserDoc?.status || 'Ativa';
+    loadNotificationSettings();
     document.body.style.visibility = 'visible';
 }
 
@@ -125,9 +126,42 @@ async function handleSendPasswordReset() {
     }
 }
 
+function loadNotificationSettings() {
+    const savedSettings = localStorage.getItem('manualflow_notifications');
+    const notificationsToggle = document.getElementById('notificationsToggle');
+    if (notificationsToggle) {
+        notificationsToggle.checked = savedSettings !== 'false';
+    }
+}
+
+function saveNotificationSettings(enabled) {
+    localStorage.setItem('manualflow_notifications', enabled ? 'true' : 'false');
+}
+
+function handleNotificationToggle(event) {
+    saveNotificationSettings(event.target.checked);
+    showMessage(`Notificações ${event.target.checked ? 'ativadas' : 'desativadas'}.`, 'success');
+}
+
 function registerListeners() {
     updateProfileBtn.addEventListener('click', handleUpdateProfile);
     sendPasswordResetBtn.addEventListener('click', handleSendPasswordReset);
+
+    const notificationsToggle = document.getElementById('notificationsToggle');
+    if (notificationsToggle) {
+        notificationsToggle.addEventListener('change', handleNotificationToggle);
+    }
+
+    const installPwaBtn = document.getElementById('installPwaBtn');
+    if (installPwaBtn) {
+        installPwaBtn.addEventListener('click', () => {
+            if (typeof installPWA === 'function') {
+                installPWA();
+            } else {
+                showMessage('Instalação PWA não disponível no momento.', 'info');
+            }
+        });
+    }
 }
 
 function initProfile() {

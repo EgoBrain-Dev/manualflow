@@ -10,6 +10,7 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
 
     <!-- CSS Tema (Dark Mode) -->
     <link rel="stylesheet" href="css/theme.css">
@@ -193,6 +194,13 @@
                                class="input-modern w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                placeholder="Emails separados por vírgulas">
                         <p class="text-xs text-gray-500">Apenas estes utilizadores poderão aceder ao manual</p>
+                    </div>
+                    <div class="space-y-3">
+                        <label class="block text-sm font-medium text-gray-700">Revisores (opcional)</label>
+                        <input type="text" id="reviewers" name="reviewers"
+                               class="input-modern w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                               placeholder="Emails ou IDs separados por vírgulas">
+                        <p class="text-xs text-gray-500">Se preencher revisores, o manual será enviado diretamente para revisão.</p>
                     </div>
                 </div>
 

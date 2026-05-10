@@ -150,7 +150,9 @@ async function loadManual(manualId) {
         };
 
         // Verificar se o usuário é revisor deste manual ou se é o autor do manual
-        if (!currentManual.reviewers?.includes(currentUser.uid) && currentManual.author !== currentUser.uid) {
+        const reviewers = currentManual.reviewers || [];
+        const isReviewer = reviewers.includes(currentUser.uid) || reviewers.includes(currentUser.email);
+        if (!isReviewer && currentManual.author !== currentUser.uid) {
             throw new Error('Não tem permissão para rever este manual');
         }
 
