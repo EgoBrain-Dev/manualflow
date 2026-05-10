@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
 
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- CSS Tema (Dark Mode) -->
     <link rel="stylesheet" href="css/theme.css">
 
@@ -34,8 +37,12 @@
                     <span class="text-xl font-bold text-gray-900">ManualFlow</span>
                 </div>
 
-                <!-- User Menu -->
+                <!-- User Menu & Theme Toggle -->
                 <div class="flex items-center space-x-4">
+                    <!-- Theme Toggle -->
+                    <button id="themeToggleBtn" class="p-2 text-gray-600 hover:text-gray-900 focus:outline-none transition-colors">
+                        <i class="fas fa-moon text-lg" id="themeIcon"></i>
+                    </button>
                     <!-- Notifications -->
                     <div class="relative">
                         <button id="notificationButton" class="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
@@ -104,11 +111,11 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 stats-grid mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 stats-grid mb-8 animate-slide-up">
             <!-- Total Manuais -->
-            <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
+            <div class="dashboard-card glass rounded-xl shadow-sm p-6 transform hover:scale-105 transition-transform duration-300">
                 <div class="flex items-center">
-                    <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                    <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 shadow-inner">
                         <i class="fas fa-book text-blue-600 text-xl"></i>
                     </div>
                     <div>
@@ -119,9 +126,9 @@
             </div>
 
             <!-- Em Revisão -->
-            <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
+            <div class="dashboard-card glass rounded-xl shadow-sm p-6 transform hover:scale-105 transition-transform duration-300">
                 <div class="flex items-center">
-                    <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                    <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4 shadow-inner">
                         <i class="fas fa-clock text-yellow-600 text-xl"></i>
                     </div>
                     <div>
@@ -132,9 +139,9 @@
             </div>
 
             <!-- Aprovados -->
-            <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
+            <div class="dashboard-card glass rounded-xl shadow-sm p-6 transform hover:scale-105 transition-transform duration-300">
                 <div class="flex items-center">
-                    <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                    <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 shadow-inner">
                         <i class="fas fa-check-circle text-green-600 text-xl"></i>
                     </div>
                     <div>
@@ -145,9 +152,9 @@
             </div>
 
             <!-- Rejeitados -->
-            <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
+            <div class="dashboard-card glass rounded-xl shadow-sm p-6 transform hover:scale-105 transition-transform duration-300">
                 <div class="flex items-center">
-                    <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                    <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center mr-4 shadow-inner">
                         <i class="fas fa-times-circle text-red-600 text-xl"></i>
                     </div>
                     <div>
@@ -303,6 +310,7 @@
     <script src="js/firebase-env.js"></script> <!-- chave segura -->
     <script type="module" src="js/firebase-config.js"></script>
     
+    <script src="js/theme.js"></script>
     <script src="js/pwa.js"></script>
     <script type="module" src="js/dashboard.js"></script>
 </body>

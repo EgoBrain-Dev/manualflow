@@ -300,7 +300,13 @@ window.handlePreview = function() {
     } else {
         htmlViewer.classList.add('hidden');
         pdfViewer.classList.remove('hidden');
-        pdfViewer.src = currentManual.fileUrl;
+        
+        if (currentManual.fileUrl) {
+            // Usa o visualizador do Google Docs para garantir que PDFs e Docs são renderizados na página sem forçar download
+            pdfViewer.src = `https://docs.google.com/gview?url=${encodeURIComponent(currentManual.fileUrl)}&embedded=true`;
+        } else {
+            pdfViewer.src = '';
+        }
     }
 }
 

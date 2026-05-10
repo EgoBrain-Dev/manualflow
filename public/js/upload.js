@@ -320,18 +320,18 @@ async function handleUpload(e) {
             fileSize = selectedFile.size;
             fileType = selectedFile.type;
         } else {
-            // É conteúdo do editor
+            // É conteúdo do editor - Bypass Cloudinary e guardar nativo na DB Firestore
             contentHtml = quillEditor.root.innerHTML;
             fileName = manualData.title + '.html';
             fileType = 'text/html';
-            // Criar um Blob com o conteúdo HTML e fazer upload para o Cloudinary para manter a consistência, ou apenas usar o contentHtml
-            const blob = new Blob([contentHtml], { type: 'text/html' });
-            fileUrl = await uploadToCloudinary(
-                blob,
-                editingManualId || 'new-manual',
-                updateProgressUI
-            );
-            fileSize = blob.size;
+            fileUrl = ''; // Ficheiros HTML são guardados nativamente
+            fileSize = new Blob([contentHtml]).size;
+            
+            // Simular progresso rápido na UI
+            if (updateProgressUI) {
+                updateProgressUI(50);
+                setTimeout(() => updateProgressUI(100), 500);
+            }
         }
 
         let manualRef;
