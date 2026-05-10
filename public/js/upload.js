@@ -222,7 +222,7 @@ async function logActivity(manualId, manualTitle, versionNumber = '') {
             timestamp: serverTimestamp(),
             details: {
                 version: versionNumber || document.getElementById('version').value,
-                fileType: selectedFile.type
+                fileType: selectedFile ? selectedFile.type : 'text/html'
             }
         };
 

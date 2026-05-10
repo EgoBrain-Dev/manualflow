@@ -92,62 +92,7 @@ if (isPWA()) {
   document.documentElement.classList.add('pwa-mode');
 }
 
-// Theme toggle functionality
-function initThemeToggle() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  setTheme(savedTheme);
-  createThemeToggle();
-}
-
-function createThemeToggle() {
-  if (document.getElementById('themeToggle')) {
-    return;
-  }
-
-  const header = document.querySelector('header');
-  if (!header) {
-    return;
-  }
-
-  const themeToggle = document.createElement('button');
-  themeToggle.id = 'themeToggle';
-  themeToggle.className = 'p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors ml-4';
-  themeToggle.title = 'Alternar tema';
-  themeToggle.innerHTML = '<i class="fas fa-moon text-lg"></i>';
-  themeToggle.addEventListener('click', toggleTheme);
-
-  const headerContent = header.querySelector('.flex.justify-between') || header;
-  headerContent.appendChild(themeToggle);
-}
-
-function setTheme(theme) {
-  const html = document.documentElement;
-  if (theme === 'dark') {
-    html.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
-    updateThemeToggleIcon('dark');
-  } else {
-    html.classList.remove('dark');
-    localStorage.setItem('theme', 'light');
-    updateThemeToggleIcon('light');
-  }
-}
-
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  setTheme(newTheme);
-}
-
-function updateThemeToggleIcon(theme) {
-  const toggle = document.getElementById('themeToggle');
-  if (toggle) {
-    toggle.innerHTML = theme === 'dark' 
-      ? '<i class="fas fa-sun text-lg"></i>' 
-      : '<i class="fas fa-moon text-lg"></i>';
-  }
-}
+// Theme toggle functionality is now handled globally by js/theme.js
 
 // Handle online/offline status
 function updateOnlineStatus() {
@@ -192,7 +137,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 // Initialize PWA features
 document.addEventListener('DOMContentLoaded', () => {
-  initThemeToggle();
+  // Add any specific PWA initialization here
 });
 
 // Initial check
