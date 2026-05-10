@@ -41,6 +41,30 @@ service cloud.firestore {
           request.auth.uid in get(/databases/$(database)/documents/manuals/$(manualId)).data.reviewers;
       }
     }
+
+    // Coleção: versions - Versões individuais de manuais
+    match /versions/{versionId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.createdBy ||
+        request.auth.uid in get(/databases/$(database)/documents/manuals/$(resource.data.manualId)).data.reviewers ||
+        request.auth.uid in get(/databases/$(database)/documents/manuals/$(resource.data.manualId)).data.allowedUsers ||
+        get(/databases/$(database)/documents/manuals/$(resource.data.manualId)).data.isPublic == true ||
+        request.auth.uid == get(/databases/$(database)/documents/manuals/$(resource.data.manualId)).data.author
+      );
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.createdBy;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+    }
+
+    // Coleção: reviews - Revisões de manuais
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.reviewerId ||
+        request.auth.uid in get(/databases/$(database)/documents/manuals/$(resource.data.manualId)).data.reviewers ||
+        request.auth.uid == get(/databases/$(database)/documents/manuals/$(resource.data.manualId)).data.author
+      );
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.reviewerId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.reviewerId;
+    }
     
     // Coleção: activities - Feed de atividades
     match /activities/{activityId} {
