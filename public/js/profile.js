@@ -16,10 +16,15 @@ const profileEmail = document.getElementById('profileEmail');
 const profileRole = document.getElementById('profileRole');
 const profileSince = document.getElementById('profileSince');
 const profileStatus = document.getElementById('profileStatus');
+const profileInitials = document.getElementById('profileInitials');
 const displayNameInput = document.getElementById('displayName');
 const displayEmailInput = document.getElementById('displayEmail');
 const updateProfileBtn = document.getElementById('updateProfileBtn');
 const sendPasswordResetBtn = document.getElementById('sendPasswordResetBtn');
+const adminPanelLink = document.getElementById('adminPanelLink');
+const installPwaBtn = document.getElementById('installPwaBtn');
+const pwaStatusText = document.getElementById('pwaStatusText');
+
 let currentUser = null;
 let currentUserDoc = null;
 
@@ -28,7 +33,7 @@ function showMessage(text, type = 'info') {
     messageDiv.className = `message-fixed ${
         type === 'error' ? 'message-error' :
         type === 'success' ? 'message-success' : 'message-info'
-    }`;
+    } slide-in`;
     messageDiv.innerText = text;
     document.body.appendChild(messageDiv);
     setTimeout(() => {
@@ -61,12 +66,20 @@ async function updateUI(user) {
     profileEmail.textContent = user.email;
     displayNameInput.value = displayName;
     displayEmailInput.value = user.email;
+    
+    if(profileInitials) profileInitials.textContent = displayName.charAt(0).toUpperCase();
 
     profileRole.textContent = currentUserDoc?.role ? currentUserDoc.role.charAt(0).toUpperCase() + currentUserDoc.role.slice(1) : 'Editor';
     profileSince.textContent = currentUserDoc?.createdAt ? new Date(currentUserDoc.createdAt.seconds * 1000).toLocaleDateString('pt-PT') : '-';
     profileStatus.textContent = currentUserDoc?.status || 'Ativa';
+    
+    if (currentUserDoc?.role === 'admin' && adminPanelLink) {
+        adminPanelLink.classList.remove('hidden');
+    }
+    
     loadNotificationSettings();
     document.body.style.visibility = 'visible';
+    checkPWAStatus();
 }
 
 async function ensureUserDocument(user) {
@@ -98,6 +111,9 @@ async function handleUpdateProfile() {
             showMessage('O nome não pode ser vazio.', 'error');
             return;
         }
+        
+        updateProfileBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Atualizando...';
+        updateProfileBtn.disabled = true;
 
         await updateProfile(currentUser, { displayName: newName });
         await setDoc(doc(db, 'users', currentUser.uid), {
@@ -113,6 +129,9 @@ async function handleUpdateProfile() {
     } catch (error) {
         console.error('Erro ao atualizar perfil:', error);
         showMessage('Erro ao atualizar perfil. Tente novamente.', 'error');
+    } finally {
+        updateProfileBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Atualizar Perfil';
+        updateProfileBtn.disabled = false;
     }
 }
 
@@ -143,6 +162,18 @@ function handleNotificationToggle(event) {
     showMessage(`Notificações ${event.target.checked ? 'ativadas' : 'desativadas'}.`, 'success');
 }
 
+function checkPWAStatus() {
+    if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        installPwaBtn.classList.add('hidden');
+        pwaStatusText.classList.remove('hidden');
+        pwaStatusText.textContent = "A aplicação já está instalada neste dispositivo.";
+    } else if(!window.deferredPrompt) {
+        installPwaBtn.disabled = true;
+        installPwaBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        pwaStatusText.classList.remove('hidden');
+    }
+}
+
 function registerListeners() {
     updateProfileBtn.addEventListener('click', handleUpdateProfile);
     sendPasswordResetBtn.addEventListener('click', handleSendPasswordReset);
@@ -152,13 +183,14 @@ function registerListeners() {
         notificationsToggle.addEventListener('change', handleNotificationToggle);
     }
 
-    const installPwaBtn = document.getElementById('installPwaBtn');
     if (installPwaBtn) {
         installPwaBtn.addEventListener('click', () => {
-            if (typeof installPWA === 'function') {
-                installPWA();
+            if (typeof window.installPWA === 'function') {
+                window.installPWA();
+            } else if(window.deferredPrompt) {
+                window.deferredPrompt.prompt();
             } else {
-                showMessage('Instalação PWA não disponível no momento.', 'info');
+                showMessage('A instalação já ocorreu ou não é suportada por este navegador.', 'error');
             }
         });
     }
@@ -178,5 +210,14 @@ function initProfile() {
 
     registerListeners();
 }
+
+// Verifica o PWA assim que possível
+window.addEventListener('beforeinstallprompt', () => {
+    if(installPwaBtn) {
+        installPwaBtn.disabled = false;
+        installPwaBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        pwaStatusText.classList.add('hidden');
+    }
+});
 
 document.addEventListener('DOMContentLoaded', initProfile);

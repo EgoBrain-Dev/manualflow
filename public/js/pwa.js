@@ -1,5 +1,5 @@
 // PWA functionality
-let deferredPrompt;
+window.deferredPrompt = null;
 
 // Check if the browser supports service workers
 if ('serviceWorker' in navigator) {
@@ -19,7 +19,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   // Prevent the mini-infobar from appearing on mobile
   e.preventDefault();
   // Stash the event so it can be triggered later.
-  deferredPrompt = e;
+  window.deferredPrompt = e;
   // Update UI to notify the user they can add to home screen
   showInstallButton();
 });
@@ -66,15 +66,15 @@ function hideInstallButton() {
 function installPWA() {
   hideInstallButton();
 
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
+  if (window.deferredPrompt) {
+    window.deferredPrompt.prompt();
+    window.deferredPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
         console.log('User accepted the install prompt');
       } else {
         console.log('User dismissed the install prompt');
       }
-      deferredPrompt = null;
+      window.deferredPrompt = null;
     });
   } else {
     alert('Instalação PWA indisponível. Use o menu do navegador para adicionar à tela inicial.');

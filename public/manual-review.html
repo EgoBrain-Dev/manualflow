@@ -12,6 +12,8 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Fonts & Theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- CSS Tema (Dark Mode) -->
     <link rel="stylesheet" href="css/theme.css">
 
@@ -47,6 +49,12 @@
 
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4">
+                    <button id="themeToggleBtn" class="p-2 text-gray-600 hover:text-gray-900 focus:outline-none transition-colors">
+                        <i class="fas fa-moon text-lg" id="themeIcon"></i>
+                    </button>
+                    <a href="admin.html" class="hidden text-gray-600 hover:text-blue-600 transition-colors" id="adminPanelLink" title="Admin">
+                        <i class="fas fa-cog text-xl"></i>
+                    </a>
                     <div class="relative" id="userMenu">
                         <button class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
                             <div class="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
@@ -328,6 +336,8 @@
 
     <!-- Scripts -->
     <script src="js/firebase-env.js"></script>
+    <script type="module" src="js/firebase-config.js"></script>
+    <script src="js/theme.js"></script>
     <script src="js/pwa.js"></script>
     <script type="module" src="js/manual-review.js"></script>
 </body>
