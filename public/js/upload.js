@@ -41,6 +41,7 @@ let currentUser = null;
 let selectedFile = null;
 let uploadTask = null;
 let currentManualReviewers = [];
+let quillEditor = null;
 
 // Função para mostrar mensagens
 function showMessage(text, type = 'error') {
@@ -235,8 +236,23 @@ async function logActivity(manualId, manualTitle, versionNumber = '') {
 async function handleUpload(e) {
     e.preventDefault();
 
-    if (!selectedFile) {
+    const inputType = document.getElementById('inputType').value;
+    const commitMessage = document.getElementById('commitMessage').value.trim();
+
+    if (inputType === 'file' && !selectedFile) {
         showMessage('Por favor, selecione um arquivo.');
+        return;
+    }
+
+    if (inputType === 'editor') {
+        if (!quillEditor || quillEditor.getText().trim().length === 0) {
+            showMessage('O conteúdo do editor não pode estar vazio.');
+            return;
+        }
+    }
+
+    if (!commitMessage) {
+        showMessage('A mensagem de commit é obrigatória.');
         return;
     }
 
@@ -249,7 +265,7 @@ async function handleUpload(e) {
     setLoading(true);
 
     try {
-        const reviewers = (reviewersInput?.value || '')
+        const reviewers = (document.getElementById('reviewers')?.value || '')
             .split(',')
             .map(item => item.trim().toLowerCase())
             .filter(item => item.length > 0);
@@ -288,11 +304,35 @@ async function handleUpload(e) {
             throw new Error('A versão é obrigatória.');
         }
 
-        const fileUrl = await uploadToCloudinary(
-            selectedFile,
-            editingManualId || 'new-manual',
-            updateProgressUI
-        );
+        let fileUrl = '';
+        let fileName = '';
+        let fileSize = 0;
+        let fileType = '';
+        let contentHtml = '';
+
+        if (inputType === 'file') {
+            fileUrl = await uploadToCloudinary(
+                selectedFile,
+                editingManualId || 'new-manual',
+                updateProgressUI
+            );
+            fileName = selectedFile.name;
+            fileSize = selectedFile.size;
+            fileType = selectedFile.type;
+        } else {
+            // É conteúdo do editor
+            contentHtml = quillEditor.root.innerHTML;
+            fileName = manualData.title + '.html';
+            fileType = 'text/html';
+            // Criar um Blob com o conteúdo HTML e fazer upload para o Cloudinary para manter a consistência, ou apenas usar o contentHtml
+            const blob = new Blob([contentHtml], { type: 'text/html' });
+            fileUrl = await uploadToCloudinary(
+                blob,
+                editingManualId || 'new-manual',
+                updateProgressUI
+            );
+            fileSize = blob.size;
+        }
 
         let manualRef;
         let manualDocId = editingManualId;
@@ -303,9 +343,9 @@ async function handleUpload(e) {
                 status: 'review',
                 version: manualData.version,
                 fileUrl,
-                fileName: selectedFile.name,
-                fileSize: selectedFile.size,
-                fileType: selectedFile.type,
+                fileName,
+                fileSize,
+                fileType,
                 reviewers: manualData.reviewers,
                 currentReviewer: manualData.currentReviewer,
                 updatedAt: serverTimestamp()
@@ -313,10 +353,10 @@ async function handleUpload(e) {
         } else {
             const tempManualRef = await addDoc(collection(db, 'manuals'), {
                 ...manualData,
-                fileUrl: fileUrl,
-                fileName: selectedFile.name,
-                fileSize: selectedFile.size,
-                fileType: selectedFile.type
+                fileUrl,
+                fileName,
+                fileSize,
+                fileType
             });
 
             manualRef = tempManualRef;
@@ -326,10 +366,13 @@ async function handleUpload(e) {
         const versionRef = await addDoc(collection(db, 'versions'), {
             manualId: manualDocId,
             fileUrl,
-            fileName: selectedFile.name,
-            fileSize: selectedFile.size,
-            fileType: selectedFile.type,
+            fileName,
+            fileSize,
+            fileType,
+            contentHtml, // Se for do editor, salvamos o HTML aqui para fácil acesso a diff
             versionNumber: manualData.version,
+            commitMessage,
+            inputType,
             createdBy: currentUser.uid,
             createdByName: currentUser.displayName || currentUser.email.split('@')[0],
             createdAt: serverTimestamp(),
@@ -342,6 +385,22 @@ async function handleUpload(e) {
         });
 
         await logActivity(manualDocId, manualData.title, manualData.version);
+
+        // Notificar o revisor atual, se existir e for diferente do autor
+        try {
+            if (manualData.currentReviewer && manualData.currentReviewer !== currentUser.uid) {
+                // Assumimos que currentReviewer pode ser o UID do revisor. 
+                // Se for email, o ideal seria buscar o UID correspondente.
+                await addDoc(collection(db, 'notifications'), {
+                    userId: manualData.currentReviewer,
+                    message: `Foi-lhe atribuído o manual "${manualData.title}" para revisão.`,
+                    type: 'review_request',
+                    targetId: manualDocId,
+                    read: false,
+                    createdAt: serverTimestamp()
+                });
+            }
+        } catch(e) { console.warn('Erro ao criar notificação:', e); }
 
         showMessage('✅ Manual carregado com sucesso!', 'success');
 
@@ -434,6 +493,39 @@ function setupEventListeners() {
             privateSettings.classList.remove('hidden');
         }
     });
+
+    // Tabs functionality
+    const tabUpload = document.getElementById('tab-upload');
+    const tabEditor = document.getElementById('tab-editor');
+    const uploadSection = document.getElementById('upload-section');
+    const editorSection = document.getElementById('editor-section');
+    const inputType = document.getElementById('inputType');
+
+    if (tabUpload && tabEditor) {
+        tabUpload.addEventListener('click', () => {
+            uploadSection.classList.remove('hidden');
+            editorSection.classList.add('hidden');
+            inputType.value = 'file';
+            
+            tabUpload.classList.add('text-blue-600', 'border-blue-600', 'active');
+            tabUpload.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+            
+            tabEditor.classList.remove('text-blue-600', 'border-blue-600', 'active');
+            tabEditor.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+        });
+
+        tabEditor.addEventListener('click', () => {
+            uploadSection.classList.add('hidden');
+            editorSection.classList.remove('hidden');
+            inputType.value = 'editor';
+            
+            tabEditor.classList.add('text-blue-600', 'border-blue-600', 'active');
+            tabEditor.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+            
+            tabUpload.classList.remove('text-blue-600', 'border-blue-600', 'active');
+            tabUpload.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+        });
+    }
 }
 
 // Load manual data for editing a version
@@ -475,8 +567,31 @@ function showPage() {
     document.body.style.visibility = 'visible';
 }
 
+// Initialize Quill Editor
+function initQuillEditor() {
+    if (document.getElementById('editor-container') && typeof Quill !== 'undefined') {
+        quillEditor = new Quill('#editor-container', {
+            theme: 'snow',
+            placeholder: 'Escreva o conteúdo do manual aqui...',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    ['blockquote', 'code-block'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'color': [] }, { 'background': [] }],
+                    ['link', 'image'],
+                    ['clean']
+                ]
+            }
+        });
+    }
+}
+
 // Initialize upload page
 function initUpload() {
+    initQuillEditor();
+    
     // Check authentication
     onAuthStateChanged(auth, async (user) => {
         if (user) {

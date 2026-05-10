@@ -44,6 +44,9 @@ const loadingActivity = document.getElementById('loadingActivity');
 const emptyActivity = document.getElementById('emptyActivity');
 const notificationDot = document.getElementById('notificationDot');
 const notificationButton = document.getElementById('notificationButton');
+const notificationDropdown = document.getElementById('notificationDropdown');
+const notificationsList = document.getElementById('notificationsList');
+const markAllReadBtn = document.getElementById('markAllReadBtn');
 
 // Current user data
 let currentUser = null;
@@ -94,28 +97,62 @@ function setupEventListeners() {
         dropdownMenu.classList.toggle('hidden');
     });
 
-    // Close dropdown when clicking outside
+    // Notification button toggle
+    if (notificationButton && notificationDropdown) {
+        notificationButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notificationDropdown.classList.toggle('hidden');
+            dropdownMenu.classList.add('hidden'); // fechar o outro menu
+        });
+
+        notificationDropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', async () => {
+                try {
+                    const unreadQuery = query(
+                        collection(db, 'notifications'),
+                        where('userId', '==', currentUser.uid),
+                        where('read', '==', false)
+                    );
+                    const unreadSnap = await getDocs(unreadQuery);
+                    
+                    const updatePromises = unreadSnap.docs.map(docSnap => 
+                        updateDoc(doc(db, 'notifications', docSnap.id), { read: true })
+                    );
+                    
+                    await Promise.all(updatePromises);
+                    
+                    // Update UI immediately
+                    if (notificationDot) notificationDot.classList.add('hidden');
+                    const unreadItems = notificationsList.querySelectorAll('.bg-blue-50');
+                    unreadItems.forEach(item => item.classList.remove('bg-blue-50'));
+                    
+                    showMessage('Notificações marcadas como lidas.', 'success');
+                } catch (error) {
+                    console.error('Erro ao marcar notificações:', error);
+                }
+            });
+        }
+    }
+
+    // Close dropdowns when clicking outside
     document.addEventListener('click', () => {
         dropdownMenu.classList.add('hidden');
+        if (notificationDropdown) notificationDropdown.classList.add('hidden');
     });
 
     // Logout functionality
-    logoutBtn.addEventListener('click', async () => {
-        try {
-            await signOut(auth);
-            window.location.href = 'login.html';
-        } catch (error) {
-            console.error('Erro ao terminar sessão:', error);
-            showError('Erro ao terminar sessão. Tente novamente.');
-        }
-    });
-
-    // Notification button
-    if (notificationButton) {
-        notificationButton.addEventListener('click', () => {
-            showMessage('Sem notificações novas no momento.', 'info');
-            if (notificationDot) {
-                notificationDot.classList.add('hidden');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Erro ao terminar sessão:', error);
+                showError('Erro ao terminar sessão. Tente novamente.');
             }
         });
     }
@@ -144,17 +181,44 @@ async function loadDashboardData() {
 // Load unread notifications
 async function loadNotifications() {
     try {
-        if (!currentUser || !notificationDot) return;
+        if (!currentUser || !notificationDot || !notificationsList) return;
 
         const notificationsQuery = query(
             collection(db, 'notifications'),
             where('userId', '==', currentUser.uid),
-            where('read', '==', false),
-            limit(1)
+            orderBy('createdAt', 'desc'),
+            limit(10)
         );
 
         const snapshot = await getDocs(notificationsQuery);
-        if (!snapshot.empty) {
+        
+        let hasUnread = false;
+        
+        if (snapshot.empty) {
+            notificationsList.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">Sem notificações no momento</p>';
+            notificationDot.classList.add('hidden');
+            return;
+        }
+
+        notificationsList.innerHTML = snapshot.docs.map(docSnap => {
+            const notif = docSnap.data();
+            if (!notif.read) hasUnread = true;
+            
+            return `
+                <a href="${notif.targetId ? `manual-view.html?id=${notif.targetId}` : '#'}" 
+                   class="block p-3 rounded-lg text-sm transition-colors ${notif.read ? 'hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100'}">
+                    <div class="flex items-start">
+                        <i class="${getNotifIcon(notif.type)} mt-1 mr-2 ${notif.read ? 'text-gray-400' : 'text-blue-500'}"></i>
+                        <div>
+                            <p class="${notif.read ? 'text-gray-600' : 'text-gray-900 font-medium'}">${notif.message}</p>
+                            <p class="text-xs text-gray-400 mt-1">${formatTimestamp(notif.createdAt)}</p>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }).join('');
+
+        if (hasUnread) {
             notificationDot.classList.remove('hidden');
         } else {
             notificationDot.classList.add('hidden');
@@ -165,6 +229,15 @@ async function loadNotifications() {
             notificationDot.classList.add('hidden');
         }
     }
+}
+
+function getNotifIcon(type) {
+    const map = {
+        'review_request': 'fas fa-eye',
+        'review_completed': 'fas fa-check-circle',
+        'update': 'fas fa-bell'
+    };
+    return map[type] || 'fas fa-info-circle';
 }
 
 // Load statistics from Firestore
@@ -225,11 +298,68 @@ async function loadStats() {
         statusRejected.textContent = stats.rejected;
         statusPublished.textContent = stats.published;
 
+        // Gamification Chart
+        renderGamificationChart(stats);
+
     } catch (error) {
         console.error('Erro ao carregar estatísticas:', error);
         // Show error message instead of fallback
         showError('Erro ao carregar estatísticas. Tente recarregar a página.');
     }
+}
+
+// Render Gamification Chart
+let gamificationChartInstance = null;
+
+function renderGamificationChart(stats) {
+    const ctx = document.getElementById('gamificationChart');
+    if (!ctx) return;
+
+    if (gamificationChartInstance) {
+        gamificationChartInstance.destroy();
+    }
+
+    const data = {
+        labels: ['Rascunho', 'Em Revisão', 'Aprovado', 'Rejeitado', 'Publicado'],
+        datasets: [{
+            label: 'Manuais',
+            data: [stats.draft, stats.review, stats.approved, stats.rejected, stats.published],
+            backgroundColor: [
+                'rgba(156, 163, 175, 0.6)', // Gray (Draft)
+                'rgba(234, 179, 8, 0.6)',   // Yellow (Review)
+                'rgba(34, 197, 94, 0.6)',   // Green (Approved)
+                'rgba(239, 68, 68, 0.6)',   // Red (Rejected)
+                'rgba(168, 85, 247, 0.6)'   // Purple (Published)
+            ],
+            borderColor: [
+                'rgb(156, 163, 175)',
+                'rgb(234, 179, 8)',
+                'rgb(34, 197, 94)',
+                'rgb(239, 68, 68)',
+                'rgb(168, 85, 247)'
+            ],
+            borderWidth: 1
+        }]
+    };
+
+    const config = {
+        type: 'doughnut',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151'
+                    }
+                }
+            }
+        }
+    };
+
+    gamificationChartInstance = new Chart(ctx, config);
 }
 
 

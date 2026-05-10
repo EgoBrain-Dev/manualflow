@@ -36,10 +36,23 @@
 
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4">
-                    <button class="relative p-2 text-gray-600 hover:text-gray-900">
-                        <i class="fas fa-bell text-lg"></i>
-                        <span class="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full"></span>
-                    </button>
+                    <!-- Notifications -->
+                    <div class="relative">
+                        <button id="notificationButton" class="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span id="notificationDot" class="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full hidden"></span>
+                        </button>
+                        <!-- Dropdown de Notificações -->
+                        <div class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border hidden z-50 dropdown-enter" id="notificationDropdown">
+                            <div class="p-3 border-b flex justify-between items-center">
+                                <span class="font-medium text-gray-900">Notificações</span>
+                                <button id="markAllReadBtn" class="text-xs text-blue-600 hover:underline">Marcar tudo lido</button>
+                            </div>
+                            <div id="notificationsList" class="max-h-64 overflow-y-auto custom-scrollbar p-2 space-y-2">
+                                <p class="text-xs text-gray-500 text-center py-4">A carregar...</p>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="relative" id="userMenu">
                         <button class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
@@ -149,6 +162,14 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 main-grid">
             <!-- Left Column -->
             <div class="lg:col-span-2 space-y-6">
+
+                <!-- Gráfico de Progresso / Gamificação -->
+                <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Progresso de Manuais (Gamificação)</h2>
+                    <div class="w-full h-64 flex justify-center items-center">
+                        <canvas id="gamificationChart"></canvas>
+                    </div>
+                </div>
 
                 <!-- Quick Actions -->
                 <div class="dashboard-card bg-white rounded-lg shadow-sm border p-6">
@@ -278,6 +299,7 @@
     </footer>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/firebase-env.js"></script> <!-- chave segura -->
     <script type="module" src="js/firebase-config.js"></script>
     

@@ -420,6 +420,10 @@ function updateReviewProgress() {
 // Submeter revisão
 async function submitReview(assessment, feedback, actionPoints) {
     try {
+        // Obter claims do usuário para verificar se é admin
+        const tokenResult = await currentUser.getIdTokenResult();
+        const isAdmin = tokenResult.claims.admin === true;
+
         // Atualizar revisão
         const reviewData = {
             status: assessment,
@@ -433,13 +437,39 @@ async function submitReview(assessment, feedback, actionPoints) {
 
         await updateDoc(doc(db, 'reviews', currentReview.id), reviewData);
 
+        // Determinar o novo status do manual
+        let newStatus = assessment === 'approved' ? 'approved' : 'rejected';
+        if (assessment === 'approved' && isAdmin) {
+            newStatus = 'published';
+        }
+
         // Atualizar status do manual
         const manualData = {
-            status: assessment === 'approved' ? 'approved' : 'rejected',
+            status: newStatus,
             updatedAt: serverTimestamp()
         };
 
         await updateDoc(doc(db, 'manuals', currentManual.id), manualData);
+
+        // Notificar o autor do manual
+        try {
+            if (currentManual.author !== currentUser.uid) {
+                await addDoc(collection(db, 'notifications'), {
+                    userId: currentManual.author,
+                    message: `O seu manual "${currentManual.title}" foi ${assessment === 'approved' ? (isAdmin ? 'Publicado' : 'Aprovado') : 'Rejeitado'} por ${currentUser.displayName || currentUser.email.split('@')[0]}.`,
+                    type: 'review_completed',
+                    targetId: currentManual.id,
+                    read: false,
+                    createdAt: serverTimestamp()
+                });
+                
+                // NOTA FUTURA: Aqui pode ser integrado um serviço como o EmailJS para envio gratuito de emails
+                // emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
+                //    to_email: currentManual.authorEmail,
+                //    message: "..."
+                // });
+            }
+        } catch(e) { console.warn('Erro ao criar notificação:', e); }
 
         // Registrar atividade
         await logActivity(assessment);

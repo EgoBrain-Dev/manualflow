@@ -44,9 +44,18 @@ const previewBtn = document.getElementById('previewBtn');
 const previewModal = document.getElementById('previewModal');
 const closePreviewBtn = document.getElementById('closePreviewBtn');
 const pdfViewer = document.getElementById('pdfViewer');
+const htmlViewer = document.getElementById('htmlViewer');
 const confirmModal = document.getElementById('confirmModal');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+// Compare Modal
+const compareModal = document.getElementById('compareModal');
+const closeCompareBtn = document.getElementById('closeCompareBtn');
+const compareBaseVersion = document.getElementById('compareBaseVersion');
+const compareNewVersion = document.getElementById('compareNewVersion');
+const compareBaseContent = document.getElementById('compareBaseContent');
+const compareNewContent = document.getElementById('compareNewContent');
 
 // Versions and reviews
 const versionsHistory = document.getElementById('versionsHistory');
@@ -58,6 +67,7 @@ let currentUser = null;
 let currentManual = null;
 let currentManualId = null;
 let isOwner = false;
+let allVersions = [];
 
 // Função para mostrar mensagens
 function showMessage(text, type = 'error') {
@@ -210,24 +220,37 @@ async function loadVersions() {
             return;
         }
 
-        versionsHistory.innerHTML = versionsSnap.docs
-            .map(versionDoc => {
-                const version = versionDoc.data();
-                return `
-                    <div class="flex items-center justify-between p-4 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <div class="flex-1">
+        // Armazenar e ordenar versões por data decrescente
+        allVersions = versionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allVersions.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
+        versionsHistory.innerHTML = allVersions.map((version, index) => {
+            const hasPrevious = index < allVersions.length - 1;
+            const prevVersionId = hasPrevious ? allVersions[index + 1].id : null;
+            
+            return `
+                <div class="flex items-center justify-between p-4 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
                             <p class="font-medium text-gray-900 dark:text-white">v${version.versionNumber}</p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">por ${version.createdByName || 'Desconhecido'}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${formatDate(version.createdAt)}</p>
+                            ${index === 0 ? '<span class="text-xs bg-green-100 text-green-800 px-2 rounded-full">Atual</span>' : ''}
                         </div>
+                        <p class="text-sm font-semibold mt-1">"${version.commitMessage || 'Upload de nova versão'}"</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">por ${version.createdByName || 'Desconhecido'}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${formatDate(version.createdAt)}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        ${hasPrevious ? `
+                        <button onclick="window.handleCompare('${prevVersionId}', '${version.id}')" class="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 rounded text-sm font-medium">
+                            <i class="fas fa-columns mr-1"></i> Comparar
+                        </button>` : ''}
                         <a href="${version.fileUrl}" target="_blank" class="inline-flex items-center px-3 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded text-sm font-medium">
-                            <i class="fas fa-download mr-1"></i>
-                            Descarregar
+                            <i class="fas fa-download mr-1"></i> Descarregar
                         </a>
                     </div>
-                `;
-            })
-            .join('');
+                </div>
+            `;
+        }).join('');
     } catch (error) {
         console.error('Erro ao carregar versões:', error);
         versionsHistory.innerHTML = '<p class="text-red-500 dark:text-red-400 text-center py-4">Erro ao carregar versões</p>';
@@ -259,19 +282,56 @@ function handleDownload() {
 }
 
 // Pré-visualizar
-function handlePreview() {
+window.handlePreview = function() {
     if (!currentManual || !currentManual.fileUrl) {
         showMessage('URL do ficheiro não disponível.');
         return;
     }
 
     previewModal.classList.remove('hidden');
-    pdfViewer.src = currentManual.fileUrl;
+    
+    // Obter o ID da versão atual para pegar o HTML, se houver
+    const currentVersion = allVersions.find(v => v.id === currentManual.currentVersionId);
+    
+    if (currentVersion && currentVersion.inputType === 'editor' && currentVersion.contentHtml) {
+        pdfViewer.classList.add('hidden');
+        htmlViewer.classList.remove('hidden');
+        htmlViewer.innerHTML = currentVersion.contentHtml;
+    } else {
+        htmlViewer.classList.add('hidden');
+        pdfViewer.classList.remove('hidden');
+        pdfViewer.src = currentManual.fileUrl;
+    }
 }
 
-function closePreview() {
+window.closePreview = function() {
     previewModal.classList.add('hidden');
     pdfViewer.src = '';
+    htmlViewer.innerHTML = '';
+}
+
+window.handleCompare = function(baseVersionId, newVersionId) {
+    const baseV = allVersions.find(v => v.id === baseVersionId);
+    const newV = allVersions.find(v => v.id === newVersionId);
+    
+    if (!baseV || !newV) return;
+
+    compareBaseVersion.textContent = 'v' + baseV.versionNumber;
+    compareNewVersion.textContent = 'v' + newV.versionNumber;
+
+    if (baseV.inputType === 'editor' && newV.inputType === 'editor') {
+        compareBaseContent.innerHTML = baseV.contentHtml || 'Sem conteúdo';
+        compareNewContent.innerHTML = newV.contentHtml || 'Sem conteúdo';
+    } else {
+        compareBaseContent.innerHTML = `<p class="text-center mt-10 text-gray-500">Visualização lado a lado de ficheiros (PDF/Doc) ainda não suportada nativamente.<br><br><a href="${baseV.fileUrl}" target="_blank" class="text-blue-500 hover:underline">Baixar versão Base</a></p>`;
+        compareNewContent.innerHTML = `<p class="text-center mt-10 text-gray-500">Visualização lado a lado de ficheiros (PDF/Doc) ainda não suportada nativamente.<br><br><a href="${newV.fileUrl}" target="_blank" class="text-blue-500 hover:underline">Baixar versão Nova</a></p>`;
+    }
+
+    compareModal.classList.remove('hidden');
+}
+
+window.closeCompare = function() {
+    compareModal.classList.add('hidden');
 }
 
 // Editar manual
@@ -350,8 +410,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listeners
     downloadBtn.addEventListener('click', handleDownload);
-    previewBtn.addEventListener('click', handlePreview);
-    closePreviewBtn.addEventListener('click', closePreview);
+    previewBtn.addEventListener('click', window.handlePreview);
+    closePreviewBtn.addEventListener('click', window.closePreview);
+    if(closeCompareBtn) closeCompareBtn.addEventListener('click', window.closeCompare);
     editBtn.addEventListener('click', handleEdit);
     reviewBtn.addEventListener('click', handleReview);
     deleteBtn.addEventListener('click', handleDeleteClick);
